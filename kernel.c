@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "vga.h"
 
 const __attribute__((section("header"))) uint32_t multiboot_header[] = {
 	0x1BADB002,
@@ -19,6 +20,7 @@ asm (
 void _Noreturn main() {
 	*(uint32_t *)0xb8000 = 0x0f530f5a;
 	*(uint32_t *)0xb8004 = 0x0f200f4f;
+	vga_set_cursor_addr(0);
 	asm (
 		"cli\n"
 		"hlt\n"
