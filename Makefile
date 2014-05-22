@@ -13,7 +13,7 @@ make_fd:
 	dd if=/dev/zero of=fd.img bs=512 count=2880
 	mkfs.vfat fd.img
 
-run:
+run: kernel
 	qemu-system-i386 -kernel kernel
 
 .PHONY: run make_fd install
