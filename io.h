@@ -57,4 +57,12 @@ static inline void outl(uint16_t addr, uint32_t val) {
 	);
 }
 
+static inline void cli() {
+	asm ("cli\n");
+}
+
+static inline void sti() {
+	asm ("sti\n");
+}
+
 #endif
