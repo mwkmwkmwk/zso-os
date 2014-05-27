@@ -119,7 +119,7 @@ char *sprint_uint(char *buf, int buf_size, uint32_t x, int base, int width, char
 		x /= base;
 	} while (x > 0);
 
-	while (i + width >= buf_size) {
+	while (i + width + 2 > buf_size) {
 		buf[i--] = fill;
 	}
 
