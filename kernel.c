@@ -110,16 +110,9 @@ void _Noreturn main() {
 	init_pic();
 	irq_enable(1);
 	cls();
-	if (0) {
-	for (i = 0; i < 50; ++i) {
-		put('0' + i % 10);
-		print(" ZSO\n");
-	}
 
-	for (i = 0; i < 120; ++i) {
-		put('#');
-	}
-	}
+// put ugly test code in this file
+#include "main_debug.h"
 
 	asm ("sti\n");
 	while (1) {
