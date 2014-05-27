@@ -5,6 +5,8 @@
 #include "multiboot.h"
 #include "alloc.h"
 
+#define UPPER_MEM_START (1 << 20) /* 1 MB */
+
 const __attribute__((section("header"))) uint32_t multiboot_header[] = {
 	0x1BADB002,
 	3,
@@ -111,8 +113,9 @@ extern char heap[];
 
 void _Noreturn main() {
 	int i; 
-	uint32_t heap_size = (mb_info->mem_upper + mb_info->mem_lower);
-	init_memory(heap, heap_size << 10);
+	uint32_t heap_size = ((mb_info->mem_upper << 10) + UPPER_MEM_START)
+		- (uint32_t)heap;
+	init_memory(heap, heap_size);
 	set_idt_entry(0x21, &int21_asm);
 	init_pic();
 	irq_enable(1);
