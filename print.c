@@ -23,7 +23,7 @@ static void fix_vga_cursor(void) {
 void init_screen(void) {
 	uint16_t pos;
 	
-	pos = vga_get_cursor_addr() & 0xff;
+	pos = vga_get_cursor_addr();
 
 	cur_row = pos / COLS;
 	cur_col = pos % COLS;
