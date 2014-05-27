@@ -7,4 +7,5 @@ SECTIONS {
 	.data : { *(.data) }
 	.bss : { *(.bss) }
 	.junk : { *(*) }
+        heap = .;
 }

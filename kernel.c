@@ -2,6 +2,8 @@
 #include "print.h"
 #include "pic.h"
 #include "io.h"
+#include "multiboot.h"
+#include "alloc.h"
 
 const __attribute__((section("header"))) uint32_t multiboot_header[] = {
 	0x1BADB002,
@@ -10,6 +12,7 @@ const __attribute__((section("header"))) uint32_t multiboot_header[] = {
 };
 
 uint8_t stack[0x1000];
+struct multiboot_info *mb_info;
 
 struct gdt_entry {
 	uint16_t limit_lo;
@@ -55,6 +58,7 @@ asm (
 	".global _start\n"
 	"_start:\n"
 	"movl $stack+0x1000, %esp\n"
+	"movl %ebx, mb_info\n"
 	"lgdt gdt_ptr+2\n"
 	"lidt idt_ptr+2\n"
 	"movl $0x10, %eax\n"
@@ -103,9 +107,12 @@ void int21() {
 }
 
 extern uint8_t int21_asm[];
+extern char heap[];
 
 void _Noreturn main() {
-	int i;
+	int i; 
+	uint32_t heap_size = (mb_info->mem_upper + mb_info->mem_lower);
+	init_memory(heap, heap_size << 10);
 	set_idt_entry(0x21, &int21_asm);
 	init_pic();
 	irq_enable(1);
