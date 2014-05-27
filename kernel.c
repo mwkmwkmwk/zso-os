@@ -4,6 +4,9 @@
 #include "io.h"
 #include "thread.h"
 
+// put ugly test code in this file
+#include "main_debug.h"
+
 const __attribute__((section("header"))) uint32_t multiboot_header[] = {
 	0x1BADB002,
 	3,
@@ -217,9 +220,7 @@ void _Noreturn func_a(void *param) {
 void _Noreturn func_b(void *param) {
 	printf("F_B\n");
 	while(1) {
-		cli();
-		printf("%x\n", counter & 0xfff);
-		sti();
+		printf("%x\n", counter);
 	}
 }
 
@@ -230,12 +231,10 @@ void _Noreturn main() {
 	irq_enable(1);
 	init_screen();
 
-// put ugly test code in this file
-#include "main_debug.h"
+	main_debug();
 
 	start_thread(&thread_a, stack_a + sizeof stack_a, func_a, 0);
 	start_thread(&thread_b, stack_b + sizeof stack_b, func_b, 0);
-	printf("%x\n", 0x40000000);
 	asm ("sti\n");
 	while (1) {
 		asm ("hlt\n");

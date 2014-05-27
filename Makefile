@@ -1,5 +1,5 @@
-KERNEL_FILES = kernel.c vga.c print.c pic.c thread.c
-KERNEL_HEADERS = vga.h io.h print.h pic.h main_debug.h thread.h
+KERNEL_FILES = kernel.c vga.c print.c pic.c thread.c stdlib.c
+KERNEL_HEADERS = vga.h io.h print.h pic.h main_debug.h thread.h stdlib.h
 
 kernel: $(KERNEL_FILES) kernel.lds $(KERNEL_HEADERS)
 	gcc -m32 -ffreestanding -nostdlib $(KERNEL_FILES) -o kernel -Wl,-T,kernel.lds
