@@ -100,7 +100,7 @@ struct reg_store {
 };
 
 void store_regs(struct reg_store *p) {
-	printf("STORE %x\n", p);
+	printf("STORE %p\n", p);
 	current_thread->eax = p->eax;
 	current_thread->ecx = p->ecx;
 	current_thread->edx = p->edx;
@@ -121,7 +121,7 @@ void store_regs(struct reg_store *p) {
 
 void *restore_regs() {
 	struct reg_store *ptr = (void *)(current_thread->esp - sizeof *ptr);
-	printf("RESTORE %x\n", ptr);
+	printf("RESTORE %p\n", ptr);
 	ptr->eax = current_thread->eax;
 	ptr->ecx = current_thread->ecx;
 	ptr->edx = current_thread->edx;
