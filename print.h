@@ -11,11 +11,13 @@ extern void cls(void);
 extern void new_line(void);
 
 // puts one character where cursor was and moves it forward, possibly generating new line
+// supports special characters \n \r \t
 extern void put(char ch);
 
 // prints a string by putting sequence of characters until (not including) '\0'
 extern void print(const char *msg);
 
+// printf supporting %d (int), %x (int), %s (const char *)
 extern void printf(const char *format, ...);
 
 #endif
