@@ -109,7 +109,7 @@ void _Noreturn main() {
 	set_idt_entry(0x21, &int21_asm);
 	init_pic();
 	irq_enable(1);
-	cls();
+	init_screen();
 
 // put ugly test code in this file
 #include "main_debug.h"
