@@ -3,6 +3,10 @@
 #include "pic.h"
 #include "io.h"
 #include "thread.h"
+#include "palloc_np.h"
+#include "multiboot.h"
+
+multiboot_info_t *multiboot_info;
 
 // put ugly test code in this file
 #include "main_debug.h"
@@ -58,6 +62,7 @@ asm (
 	".text\n"
 	".global _start\n"
 	"_start:\n"
+	"movl %ebx, multiboot_info\n"
 	"movl $stack+0x1000, %esp\n"
 	"lgdt gdt_ptr+2\n"
 	"lidt idt_ptr+2\n"
@@ -226,6 +231,7 @@ void _Noreturn func_b(void *param) {
 
 void _Noreturn main() {
 	int i;
+	init_palloc();
 	set_idt_entry(0x21, &int21_asm);
 	init_pic();
 	irq_enable(1);
