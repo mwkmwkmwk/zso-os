@@ -2,105 +2,113 @@
 #include "palloc.h"
 #include "print.h"
 
-static inline uint32_t get_page_directory(void)
+
+extern uint8_t kernel_start[];
+
+// pti in range (0, 1023 (4kB / sizeof (int) - 1)
+static inline uint32_t get_page_table_address(int pti)
 {
-    return 0x3ff << 22;
+    return (0x3ff << 22) | (pti << 12);
+}
+
+static inline uint32_t get_page_directory_address(void)
+{
+    return get_page_table_address(0x3ff); 
 }
 
 uint32_t palloc(void) {
-    uint32_t *pfree_list = 0;
+    uint32_t *pfree_list = (uint32_t *)get_page_table_address(0); 
+    uint32_t *pfree_next = (uint32_t *)0;
     uint32_t res = *pfree_list;
 
-    printf("palloc phys %x virt %x\n", res, res << 22);
+    *pfree_list = *pfree_next | 0x1;
 
-    if (res)
-        *pfree_list = *(uint32_t *)(res << 22);
     return res;
 }
 
-inline uint32_t get_page_table_entry_address(uint32_t pd, uint32_t virt)
-{
-	int pdi = virt >> 22 & 0x3ff; //1024 values
-	int pti = virt >> 12 & 0x3ff; //1024 values
-    uint32_t pt = (pd + pdi) & ~0xfff; //TODO o co tu chodzi?
-
-    printf("virt %x pd %x pt %x pdi %d pti %d\n", virt, pd, pt, pdi, pti);
-
-    return pt + sizeof(uint32_t) * pti;
-}
-
-
-// with virtual address
 void pfree(uint32_t addr) {
-    uint32_t pd = get_page_directory();
-    uint32_t pte = get_page_table_entry_address(pd, addr);
+    uint32_t *pfree_list = (uint32_t *) get_page_table_address(0);
+    uint32_t *pfree_next = (uint32_t *)0;
+    uint32_t tail = *pfree_list & ~0xfff;
 
-    /*
-    *(uint32_t *)temp = addr; //create mapping for page addr at virtual address 2
-
-    printf("pfree phys %x virt %x\n", addr, 2);
-	*(uint32_t *) (2 << 12) = *(uint32_t *)0; //TODO phys to virt
-	*(uint32_t *) 0 = addr | 0x1;
-    */
-    *(uint32_t *)addr = *(uint32_t *)0;
-    *(uint32_t *)0 = *(uint32_t *)pte & ~0xfff;
+    *pfree_list = addr;
+    *pfree_next = tail;
 }
+
+inline uint32_t get_page_table_entry_address(uint32_t virt)
+{
+	int pdi = virt >> 22 & 0x3ff;
+	int pti = virt >> 12 & 0x3ff;
+    uint32_t offset = pti * sizeof (uint32_t); //12 bit
+    uint32_t *ppde = (uint32_t *)(get_page_directory_address() | pdi * sizeof(uint32_t));
+    uint32_t pte = get_page_table_address(pdi) | offset;
+
+	if (!*ppde) 
+    {
+		*ppde = palloc() | 0x1;
+	}
+
+    return pte;
+}
+
+
 
 
 uint32_t valloc(int cnt, uint32_t start, uint32_t end) {
-    uint32_t pd = get_page_directory();
     int current = 0;
     uint32_t page;
 
-	printf("from cr3 PD %x pd %x\n", pd, *(uint32_t *)pd);
-
-
     for (page = start; page < end && current < cnt; page += 0x1000)
     {
-        uint32_t pte = get_page_table_entry_address(pd, page);
-        if (*(uint32_t *)pte == 0)
+        uint32_t *ppte = (uint32_t *) get_page_table_entry_address(page);
+        if (*ppte == 0)
             ++current;
         else
             current = 0;
     }
+
     if (current == cnt)
     {
-        end = current;
-        for (; current > 0; --current, page -=0x1000)
+        for (; current > 0; --current)
         {
-            uint32_t pte = get_page_table_entry_address(pd, page);
+            uint32_t *ppte;
+            
+            page -= 0x1000;
+            ppte = (uint32_t *) get_page_table_entry_address(page);
 
-            printf("reserving page %x\n", page);
-            *(uint32_t *) pte = 2;
+            *ppte = 2;
         }
-        page += 0x1000;
     } else
-        printf("couldn't reserve virtual address range");
+        printf("couldn't reserve virtual address range pages %d\n", cnt);
 
     return page;
 }
 
 void vfree(uint32_t page, int cnt) {
-    uint32_t pd = get_page_directory();
 
-    for (; cnt > 0; --cnt, page +=0x1000)
+    for (; cnt > 0; --cnt, page += 0x1000)
     {
-        uint32_t pte = get_page_table_entry_address(pd, page);
+        uint32_t *ppte = (uint32_t *) get_page_table_entry_address(page);
 
-        printf("releasing  page %x\n", page);
-        * (uint32_t *) pte = 0;
+        if (*ppte == 2)
+            *ppte = 0;
+        else 
+        {
+            printf("PANIC\n");
+            printf("attempting to unmap used page\n");
+            asm("cli\nhlt\n");
+            __builtin_unreachable();
+        }
     }
 }
 
 void map_page(uint32_t phys, uint32_t virt, int flags) {
-    uint32_t pd = get_page_directory();
-    uint32_t pte = get_page_table_entry_address(pd, virt);
+    uint32_t *ppte = (uint32_t *) get_page_table_entry_address(virt);
     
-    printf("map page phys %x virt %x flags %x ppte %x\n", phys, virt, flags, pte);
-
-    if (*(uint32_t *)pte == 2)
-        *(uint32_t *)pte = phys | flags;
-    else {
+    if (*ppte == 2)
+        *ppte = phys | flags;
+    else 
+    {
 		printf("PANIC\n");
 		printf("attempting to map page without reserving virtual memory first\n");
 		asm("cli\nhlt\n");
@@ -109,72 +117,70 @@ void map_page(uint32_t phys, uint32_t virt, int flags) {
 }
 
 void unmap_page(uint32_t virt) {
-    uint32_t pd = get_page_directory();
-    uint32_t pte = get_page_table_entry_address(pd, virt);
+    uint32_t *ppte = (uint32_t *) get_page_table_entry_address(virt);
 
-    if (*(uint32_t *)pte == 0 || *(uint32_t *)pte == 2)
+    if (*ppte == 0 || *ppte == 2)
     {
 		printf("PANIC\n");
-		printf("attempting to unmap unmapped page\n");
+		printf("attempting to unmap the unmapped page\n");
 		asm("cli\nhlt\n");
 		__builtin_unreachable();
     }
 
-    *(uint32_t *)pte = 2;
+    *ppte = 2;
 }
 
 #define MAP_USER 0x2
 #define MAP_RW   0x4
 
 void *malloc(uint32_t size) {
-    uint32_t real_size = (size + 0x1000) & ~0xfff;
-    int num_pages = real_size >> 12;
-
     if (size > 0)
     {
-        int i;
+        uint32_t real_size = (size + 0x1000) & ~0xfff;
+        int num_pages = real_size >> 12;
         uint32_t virt;
 
-        virt = valloc(num_pages, 0x1000, 0xb8000);
+        virt = valloc(num_pages, 0, (uint32_t) &kernel_start);
 
-        if (virt > 0xb8000)
-            return 0;
+        if (virt < 0xb8000)
+        {
+            uint32_t *pvirt = (uint32_t *) virt;
+            int i;
 
-        for (i = 0; i < num_pages; ++i) {
-            uint32_t page = palloc();
-            map_page(page, virt + i * 0x1000, 1 | MAP_RW );
+            for (i = 0; i < num_pages; ++i) {
+                uint32_t page = palloc();
+                map_page(page, virt + i * 0x1000, 0x1 | MAP_RW  | MAP_USER);
+            }
+
+            pvirt[0] = num_pages;
+
+            return pvirt + 1;
         }
-
-        *(int*)virt = num_pages;
-
-        printf("malloc size %u real_size %u num_pages %u real_addr %x res %x\n", size, real_size, num_pages, virt, virt + sizeof(int));
-
-        return (void *)(virt + sizeof(int));
     }
+
+    printf("malloc failed size %x\n", size);
 
     return 0;
 }
 
 void free(void *addr) {
-    uint32_t virt = ((uint32_t) addr) - sizeof(int);
-
     if (addr)
     {
-        uint32_t pd = get_page_directory();
+        uint32_t *pvirt = ((uint32_t *) addr) - 1;
+        uint32_t virt = (uint32_t) pvirt;
         int i;
-        int num_pages = *(int *)virt; //TODO fails here
-        printf("free addr %x pages %d\n", addr, num_pages);
+        int num_pages = *pvirt;
 
         for (i = 0; i < num_pages; ++i)
         {
             uint32_t page = virt + i *0x1000;
-            uint32_t pte = get_page_table_entry_address(pd, page);
-            uint32_t phys = * (uint32_t *)pte;
+            uint32_t pte = get_page_table_entry_address(page);
+            uint32_t phys = *(uint32_t *)pte;
             
-            pfree(page);
             unmap_page(page);
-            printf("removing page virt %x phys %x\n", page, phys);
+            pfree(phys);
         }
-        //vfree(virt, num_pages);
+
+        vfree(virt, num_pages);
     }
 }
