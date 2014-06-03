@@ -1,11 +1,8 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include "print.h"
-#include "stdlib.h"
+#include "string.h"
 #include "vga.h"
-
-#define NORMAL_COLOR 0x0700
-#define LIGHT_COLOR 0x0f00
 
 struct screen {
 	uint16_t buf[SCREEN_ROWS][SCREEN_COLS];
@@ -13,11 +10,26 @@ struct screen {
 
 static struct screen *screen = (struct screen *)0xb8000;
 
-static uint8_t cur_row = 0;
-static uint8_t cur_col = 0;
+struct window *active_window = 0;
+
+INIT_WINDOW(static struct window __default_window);
+
+struct window *default_window = &__default_window;
+
+static uint16_t colored_char(struct window *win, char ch) {
+	return ((uint16_t)win->color << 8) | ch;
+}
 
 static void fix_vga_cursor(void) {
-	vga_set_cursor_addr(cur_col + SCREEN_COLS * cur_row);
+	if (active_window != 0) {
+		vga_set_cursor_addr(active_window->top_left.x +
+				active_window->cursor_pos.x +
+				SCREEN_COLS * (active_window->top_left.y +
+					active_window->cursor_pos.y));
+	} else {
+		// setting cursor outside of visible area makes it disappear
+		vga_set_cursor_addr(SCREEN_COLS * SCREEN_ROWS);
+	}
 }
 
 void init_screen(void) {
@@ -25,124 +37,115 @@ void init_screen(void) {
 	
 	pos = vga_get_cursor_addr();
 
-	cur_row = pos / SCREEN_COLS;
-	cur_col = pos % SCREEN_COLS;
+	default_window->cursor_pos = (struct win_point) {
+		.x = pos % SCREEN_COLS,
+		.y = pos / SCREEN_COLS
+	};
 
-	new_line();
+	new_line(default_window);
+
+	set_active_window(default_window);
 }
 
-void cls(void) {
+void fill(struct window *win, char ch) {
 	int row, col;
 
-	for (row = 0; row < SCREEN_ROWS; ++row) {
-		for (col = 0; col < SCREEN_COLS; ++col) {
-			screen->buf[row][col] = NORMAL_COLOR | ' ';
+	for (row = win->top_left.y; row <= win->bottom_right.y; ++row) {
+		for (col = win->top_left.x; col <= win->bottom_right.x; ++col) {
+			screen->buf[row][col] = colored_char(win, ch);
 		}
 	}
 
-	cur_row = 0;
-	cur_col = 0;
-	
-	fix_vga_cursor();
+	if (win == active_window) {
+		fix_vga_cursor();
+	}
 }
 
-void new_line(void) {
+void cls(struct window *win) {
+	set_color(win, NORMAL_COLOR);
+	win->cursor_pos = MK_WIN_POINT(0, 0);
+
+	fill(win, ' ');
+}
+
+void new_line(struct window *win) {
 	int row, col;
 
-	// shifting line
-	if (cur_row == SCREEN_ROWS - 1) {
-		for (row = 0; row < SCREEN_ROWS - 1; ++row) {
-			for (col = 0; col < SCREEN_COLS; ++col) {
-				screen->buf[row][col] = screen->buf[row + 1][col];
+	if (win->scroll_mode == SHIFT_MODE) {
+		// shifting line
+		if (win->cursor_pos.y == WIN_SIZE(win).height - 1) {
+			for (row = win->top_left.y; row <= win->bottom_right.y - 1; ++row) {
+				for (col = win->top_left.x; col <= win->bottom_right.x; ++col) {
+					screen->buf[row][col] = screen->buf[row + 1][col];
+				}
 			}
+		} else {
+			++win->cursor_pos.y;
 		}
-	} else {
-		++cur_row;
+
+		// wiping line
+		for (col = win->top_left.x; col <= win->bottom_right.x; ++col) {
+			screen->buf[win->top_left.y + win->cursor_pos.y][col] =
+				colored_char(win, ' ');
+		}
+
+		win->cursor_pos.x = 0;
+	} else { // REPEAT_MODE
+		win->cursor_pos.y = (win->cursor_pos.y + 1) % WIN_SIZE(win).height;
+		win->cursor_pos.x = 0;
 	}
 
-	for (col = 0; col < SCREEN_COLS; ++col) {
-		screen->buf[cur_row][col] = NORMAL_COLOR | ' ';
+	if (win == active_window) {
+		fix_vga_cursor();
 	}
-
-	cur_col = 0;
-	fix_vga_cursor();
 }
 
-void put(char ch) {
+void putc(struct window *win, char ch) {
 	// TODO additional special characters
 	switch (ch) {
 		case '\n':
-			new_line();
+			new_line(win);
 			break;
 
 		case '\r':
-			cur_col = 0;
+			win->cursor_pos.x = 0;
 			break;
 
 		case '\t':
 			do {
-				put(' ');
-			} while (cur_col % TAB_SIZE != 0);
+				putc(win, ' ');
+			} while (win->cursor_pos.x % TAB_SIZE != 0);
 			break;
 
 		default:
-			screen->buf[cur_row][cur_col] = NORMAL_COLOR | ch;
-			++cur_col;
+			screen->buf[win->top_left.y + win->cursor_pos.y]
+				[win->top_left.x + win->cursor_pos.x] =
+				colored_char(win, ch);
+			++win->cursor_pos.x;
 
-			if (cur_col == SCREEN_COLS) {
-				new_line();
+			if (win->top_left.x + win->cursor_pos.x ==
+					win->bottom_right.x + 1) {
+				new_line(win);
 			}
 
 			break;
 	}
 
-	fix_vga_cursor();
+	if (win == active_window) {
+		fix_vga_cursor();
+	}
 }
 
-void print(const char *msg) {
+void puts(struct window *win, const char *msg) {
 	while (*msg != '\0') {
-		put(*msg);
+		putc(win, *msg);
 		++msg;
-	}
-}
-
-// works up to base 36
-static char digit2char[] = "0123456789abcdefghijklmnopqrstuvwxyz";
-
-// it's user responsibility that width <= buf_size - 1
-char *sprint_uint(char *buf, int buf_size, uint32_t x, int base, int width, char fill) {
-	int i = buf_size - 1;
-	buf[i--] = '\0';
-
-	do {
-		buf[i--] = digit2char[x % base];
-		x /= base;
-	} while (x > 0);
-
-	while (i + width + 2 > buf_size) {
-		buf[i--] = fill;
-	}
-
-	return buf + i + 1;
-}
-
-char *sprint_int(char *buf, int buf_size, int32_t x, int base, int width, char fill) {
-	char *res;
-
-	res = sprint_uint(buf + 1, buf_size - 1, abs_i32_to_u32(x),
-			base, width == 0 ? 0 : width - 1, fill);
-
-	if (x < 0) {
-		*(--res) = '-';
-		return res;
-	} else {
-		return res;
 	}
 }
 
 #define INT_BUF_SIZE 12
 
-void printf(const char *format, ...) {
+void printf(struct window *win, const char *format, ...) {
 	va_list ap;
 	int i;
 	char buf[INT_BUF_SIZE];
@@ -156,42 +159,42 @@ void printf(const char *format, ...) {
 
 			switch (format[i]) {
 				case '\0':
-					put('%');
+					putc(win, '%');
 					goto finish;
 
 				case '%':
-					put('%');
+					putc(win, '%');
 					break;
 
 				case 's':
-					print(va_arg(ap, const char *));
+					puts(win, va_arg(ap, const char *));
 					break;
 
 				case 'd':
-					print(sprint_int(buf, INT_BUF_SIZE, va_arg(ap, int32_t), 10, 0, 0));
+					puts(win, sprint_int(buf, INT_BUF_SIZE, va_arg(ap, int32_t), 10, 0, 0));
 					break;
 
 				case 'u':
-					print(sprint_uint(buf, INT_BUF_SIZE, va_arg(ap, uint32_t), 10, 0, 0));
+					puts(win, sprint_uint(buf, INT_BUF_SIZE, va_arg(ap, uint32_t), 10, 0, 0));
 					break;
 
 				case 'x':
-					print(sprint_uint(buf, INT_BUF_SIZE, va_arg(ap, uint32_t), 16, 0, 0));
+					puts(win, sprint_uint(buf, INT_BUF_SIZE, va_arg(ap, uint32_t), 16, 0, 0));
 					break;
 
 				case 'p':
-					print("0x");
-					print(sprint_uint(buf, INT_BUF_SIZE, (uint32_t)va_arg(ap, void *), 16, 8, '0'));
+					puts(win, "0x");
+					puts(win, sprint_uint(buf, INT_BUF_SIZE, (uint32_t)va_arg(ap, void *), 16, 8, '0'));
 					break;
 
 				default:
 					// simply print incorrect options
-					put('%');
-					put(format[i]);
+					putc(win, '%');
+					putc(win, format[i]);
 					break;
 			}
 		} else {
-			put(format[i]);
+			putc(win, format[i]);
 		}
 
 		++i;
@@ -199,4 +202,25 @@ void printf(const char *format, ...) {
 
 finish:
 	va_end(ap);
+}
+
+void set_active_window(struct window *win) {
+	active_window = win;
+	fix_vga_cursor();
+}
+
+void set_color(struct window *win, uint8_t color) {
+	win->color = color;
+}
+
+void set_cursor_pos(struct window *win, struct win_point pos) {
+	win->cursor_pos = pos;
+
+	if (win == active_window) {
+		fix_vga_cursor();
+	}
+}
+
+void set_scroll_mode(struct window *win, uint8_t mode) {
+	win->scroll_mode = mode;
 }

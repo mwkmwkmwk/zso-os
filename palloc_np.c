@@ -18,7 +18,7 @@ void pfree_np(uint32_t addr) {
 
 uint32_t palloc_np() {
 	if (!free_list) {
-		printf("PANIC\n");
+		printf(default_window, "PANIC\n");
 		asm("cli\nhlt\n");
 		__builtin_unreachable();
 	} else {
@@ -101,6 +101,6 @@ void init_palloc() {
 	asm volatile ("movl %%cr0, %0\n" : "=r"(cr0):);
 	cr0 |= 1 << 31;
 	asm volatile ("movl %0, %%cr0\n" : : "r"(cr0));
-	printf("PD %x\n", pd);
-	printf("PD PD %x\n", *(uint32_t *)0xfffffffc);
+	printf(default_window, "PD %x\n", pd);
+	printf(default_window, "PD PD %x\n", *(uint32_t *)0xfffffffc);
 }
