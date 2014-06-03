@@ -65,4 +65,24 @@ static inline void sti() {
 	asm ("sti\n");
 }
 
+static inline void set_cr0(uint32_t val) {
+	asm volatile ("movl %0, %%cr0\n" : : "r"(val));
+}
+
+static inline void set_cr3(uint32_t val) {
+	asm volatile ("movl %0, %%cr3\n" : : "r"(val));
+}
+
+static inline uint32_t get_cr0() {
+	uint32_t res;
+	asm volatile ("movl %%cr0, %0\n" : "=r"(res):);
+	return res;
+}
+
+static inline uint32_t get_cr3() {
+	uint32_t res;
+	asm volatile ("movl %%cr3, %0\n" : "=r"(res):);
+	return res;
+}
+
 #endif

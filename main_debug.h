@@ -23,7 +23,7 @@ static void main_debug() {
 	}
 
 	// testing windows
-	if (1) {
+	if (0) {
 		fill(default_window, '_');
 
 		set_cursor_pos(default_window, MK_WIN_POINT(0, 0));
