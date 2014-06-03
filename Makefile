@@ -1,5 +1,5 @@
-KERNEL_FILES = kernel.c vga.c print.c pic.c thread.c palloc_np.c stdlib.c
-KERNEL_HEADERS = vga.h io.h print.h pic.h main_debug.h thread.h multiboot.h palloc_np.h stdlib.h
+KERNEL_FILES = kernel.c vga.c print.c pic.c thread.c palloc_np.c string.c
+KERNEL_HEADERS = vga.h io.h print.h pic.h main_debug.h thread.h multiboot.h palloc_np.h string.h
 
 kernel: $(KERNEL_FILES) kernel.lds $(KERNEL_HEADERS)
 	gcc -m32 -ffreestanding -nostdlib $(KERNEL_FILES) -o kernel -Wl,-T,kernel.lds
@@ -16,4 +16,7 @@ make_fd:
 run: kernel
 	qemu-system-i386 -kernel kernel
 
-.PHONY: run make_fd install
+clean:
+	rm -f kernel
+
+.PHONY: run make_fd install clean
