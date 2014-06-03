@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include "multiboot.h"
 #include "print.h"
+#include "io.h"
 
 extern multiboot_info_t *multiboot_info;
 
@@ -32,7 +33,11 @@ void map_page_np(uint32_t *pd, uint32_t phys, uint32_t virt) {
 	int pdi = virt >> 22 & 0x3ff;
 	int pti = virt >> 12 & 0x3ff;
 	if (!pd[pdi]) {
-		pd[pdi] = palloc_np() | 1;
+		uint32_t *pt = (uint32_t *)palloc_np();
+		pd[pdi] = (uint32_t)pt | 1;
+		int i;
+		for (i = 0; i < 0x400; i++)
+			pt[i] = 0;
 	}
 	uint32_t *pt = (uint32_t *)(pd[pdi] & ~0xfff);
 	pt[pti] = phys | 1;
@@ -96,11 +101,8 @@ void init_palloc() {
 		map_page_np(pd, page, page);
 	}
 	map_page_np(pd, free_list, 0);
-	asm volatile ("movl %0, %%cr3\n" : : "r"(pd));
-	uint32_t cr0;
-	asm volatile ("movl %%cr0, %0\n" : "=r"(cr0):);
-	cr0 |= 1 << 31;
-	asm volatile ("movl %0, %%cr0\n" : : "r"(cr0));
+	set_cr3((uint32_t)pd);
+	set_cr0(get_cr0() | 1 << 31);
 	printf(default_window, "PD %x\n", pd);
 	printf(default_window, "PD PD %x\n", *(uint32_t *)0xfffffffc);
 }
