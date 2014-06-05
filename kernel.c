@@ -105,7 +105,7 @@ struct reg_store {
 };
 
 void store_regs(struct reg_store *p) {
-	printf("STORE %p\n", p);
+	printf(default_window, "STORE %p\n", p);
 	current_thread->eax = p->eax;
 	current_thread->ecx = p->ecx;
 	current_thread->edx = p->edx;
@@ -126,7 +126,7 @@ void store_regs(struct reg_store *p) {
 
 void *restore_regs() {
 	struct reg_store *ptr = (void *)(current_thread->esp - sizeof *ptr);
-	printf("RESTORE %p\n", ptr);
+	printf(default_window, "RESTORE %p\n", ptr);
 	ptr->eax = current_thread->eax;
 	ptr->ecx = current_thread->ecx;
 	ptr->edx = current_thread->edx;
@@ -192,16 +192,16 @@ void switch_thread() {
 			break;
 		}
 	}
-	printf("%x\n", current_thread);
+	printf(default_window, "%x\n", current_thread);
 }
 
 void int21() {
 	const char *hex = "0123456789abcdef";
 	uint8_t byte = inb(0x60);
 	char buf[3] = { hex[byte >> 4], hex[byte & 0xf], 0 };
-	print("INTERRUPT 0x21: 0x");
-	print(buf);
-	print("\n");
+	puts(default_window, "INTERRUPT 0x21: 0x");
+	puts(default_window, buf);
+	puts(default_window, "\n");
 	outb(0x20, 0x20);
 	if (byte & 0x80)
 		switch_thread();
@@ -217,25 +217,25 @@ struct thread thread_a;
 struct thread thread_b;
 
 void _Noreturn func_a(void *param) {
-	printf("F_A\n");
+	printf(default_window, "F_A\n");
 	while(1)
 		counter++;
 }
 
 void _Noreturn func_b(void *param) {
-	printf("F_B\n");
+	printf(default_window, "F_B\n");
 	while(1) {
-		printf("%x\n", counter);
+		printf(default_window, "%x\n", counter);
 	}
 }
 
 void _Noreturn main() {
 	int i;
+	init_screen();
 	init_palloc();
 	set_idt_entry(0x21, &int21_asm);
 	init_pic();
 	irq_enable(1);
-	init_screen();
 
 	main_debug();
 

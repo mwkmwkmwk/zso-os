@@ -1,7 +1,7 @@
 #include "palloc_np.h"
 #include "palloc.h"
 #include "print.h"
-
+#include "io.h"
 
 extern uint8_t kernel_start[];
 
@@ -79,7 +79,7 @@ uint32_t valloc(int cnt, uint32_t start, uint32_t end) {
             *ppte = 2;
         }
     } else
-        printf("couldn't reserve virtual address range pages %d\n", cnt);
+        printf(default_window, "couldn't reserve virtual address range pages %d\n", cnt);
 
     return page;
 }
@@ -94,8 +94,8 @@ void vfree(uint32_t page, int cnt) {
             *ppte = 0;
         else 
         {
-            printf("PANIC\n");
-            printf("attempting to unmap used page\n");
+            printf(default_window, "PANIC\n");
+            printf(default_window, "attempting to unmap used page\n");
             asm("cli\nhlt\n");
             __builtin_unreachable();
         }
@@ -105,12 +105,14 @@ void vfree(uint32_t page, int cnt) {
 void map_page(uint32_t phys, uint32_t virt, int flags) {
     uint32_t *ppte = (uint32_t *) get_page_table_entry_address(virt);
     
-    if (*ppte == 2)
+    if (*ppte == 2) {
         *ppte = phys | flags;
+    	set_cr3(get_cr3());
+    }
     else 
     {
-		printf("PANIC\n");
-		printf("attempting to map page without reserving virtual memory first\n");
+		printf(default_window, "PANIC\n");
+		printf(default_window, "attempting to map page without reserving virtual memory first\n");
 		asm("cli\nhlt\n");
 		__builtin_unreachable();
     }
@@ -121,13 +123,14 @@ void unmap_page(uint32_t virt) {
 
     if (*ppte == 0 || *ppte == 2)
     {
-		printf("PANIC\n");
-		printf("attempting to unmap the unmapped page\n");
+		printf(default_window, "PANIC\n");
+		printf(default_window, "attempting to unmap the unmapped page\n");
 		asm("cli\nhlt\n");
 		__builtin_unreachable();
     }
 
     *ppte = 2;
+    set_cr3(get_cr3());
 }
 
 #define MAP_USER 0x2
@@ -158,7 +161,7 @@ void *malloc(uint32_t size) {
         }
     }
 
-    printf("malloc failed size %x\n", size);
+    printf(default_window, "malloc failed size %x\n", size);
 
     return 0;
 }
