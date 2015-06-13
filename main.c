@@ -2,6 +2,10 @@
 #include "gdt.h"
 #include "pic.h"
 #include "io.h"
+#include "pmalloc.h"
+#include "panic.h"
+#include "page.h"
+#include "mb.h"
 
 void printf(const char *str) {
 	struct vga_char *cur = (void *)((char *)framebuffer + get_cursor());
@@ -11,6 +15,13 @@ void printf(const char *str) {
 		cur[i].attr = 0x0a;
 	}
 	set_cursor((char *)(cur + i) - (char *)framebuffer);
+}
+
+_Noreturn void panic(const char *arg) {
+	printf(arg);
+	while (1) {
+		asm volatile("cli\nhlt":::);
+	}
 }
 
 void sys_hello() {
@@ -32,8 +43,10 @@ extern char asm_sys_hello[];
 extern char asm_div_zero[];
 extern char asm_irq1[];
 
-void main() {
+void main(struct mb_header *mbhdr) {
 	init_gdt();
+	init_pmalloc(mbhdr);
+	init_paging();
 	set_idt(0x20, (uint32_t)asm_sys_hello, 0);
 	set_idt(0x00, (uint32_t)asm_div_zero, 0);
 	init_pic();

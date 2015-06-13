@@ -6,11 +6,12 @@ framebuffer = 0xb8000
 .global _start
 _start:
 movl $end_stack, %esp
+pushl %ebx
 call main
 cli
 hlt
 
-.section .rodata
+.section mb_hdr, "a"
 
 .balign 4
 multiboot_header:
