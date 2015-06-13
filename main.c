@@ -1,16 +1,16 @@
-#include "vga.h"
 #include "gdt.h"
 #include "pic.h"
 #include "io.h"
+#include "printf.h"
 
-void printf(const char *str) {
-	struct vga_char *cur = (void *)((char *)framebuffer + get_cursor());
-	int i;
-	for (i = 0; str[i]; i++) {
-		cur[i].ch = str[i];
-		cur[i].attr = 0x0a;
-	}
-	set_cursor((char *)(cur + i) - (char *)framebuffer);
+void self_test() {
+	asm volatile(
+		"int $0x20\n" // Hello world!
+		:::
+	);
+
+	printf("123 == %u\n", 123);
+	printf("0x123 == 0x%x\n", 0x123);
 }
 
 void sys_hello() {
@@ -39,10 +39,9 @@ void main() {
 	init_pic();
 	set_idt(0xf1, (uint32_t)asm_irq1, 1);
 	outb(0x21, 0xfd);
-	asm volatile(
-		"int $0x20\n"
-		:::
-	);
+
+	self_test();
+
 	while (1) {
 		asm volatile ("hlt":::);
 	}
