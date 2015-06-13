@@ -15,4 +15,4 @@ kernel: $(OBJS)
 	gcc $(CFLAGS) -o $@ $(OBJS)
 
 clean:
-	rm -f *.o
+	rm -f *.o kernel
