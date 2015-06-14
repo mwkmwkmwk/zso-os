@@ -30,6 +30,7 @@ void uint32_to_str(char* dst, uint32_t val, int base) {
 		*dst++ = (val % base) + '0';
 		val /= base;
 	} while (val > 0);
+	*dst++ = '\0';
 	strrev(org);
 }
 
@@ -66,8 +67,14 @@ void printf(const char *fmt, ...) {
 				uint32_to_str(int_str, va_arg(ap, uint32_t), 10);
 				puts(int_str);
 				break;
+			case 'c':
+				putc(va_arg(ap, unsigned int));
+				break;
+			case 's':
+				puts(va_arg(ap, const char*));
+				break;
 			default:
-				puts("\nERROR: format specifier not supported!\n");
+				puts("\nERROR in printf(): format specifier not supported!\n");
 		}
 	}
 

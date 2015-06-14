@@ -9,8 +9,11 @@ void self_test() {
 		:::
 	);
 
+	// printf tests
 	printf("123 == %u\n", 123);
 	printf("0x123 == 0x%x\n", 0x123);
+	printf("'x' == '%c'\n", 'x');
+	printf("\"asdf%%123\" == \"%s\"\n", "asdf%123");
 }
 
 void sys_hello() {
