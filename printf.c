@@ -26,8 +26,13 @@ void puts(const char* str) {
 
 void uint32_to_str(char* dst, uint32_t val, int base) {
 	char* org = dst;
+	uint64_t digit;
 	do {
-		*dst++ = (val % base) + '0';
+		digit = (val % base);
+		if (digit < 10)
+			*dst++ = digit + '0';
+		else
+			*dst++ = digit + 'a' - 10;
 		val /= base;
 	} while (val > 0);
 	*dst++ = '\0';
@@ -60,11 +65,11 @@ void printf(const char *fmt, ...) {
 				putc('%');
 				break;
 			case 'x':
-				uint32_to_str(int_str, va_arg(ap, uint32_t), 16);
+				uint32_to_str(int_str, va_arg(ap, unsigned int), 16);
 				puts(int_str);
 				break;
 			case 'u':
-				uint32_to_str(int_str, va_arg(ap, uint32_t), 10);
+				uint32_to_str(int_str, va_arg(ap, unsigned int), 10);
 				puts(int_str);
 				break;
 			case 'c':
