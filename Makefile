@@ -1,5 +1,5 @@
 
-CFLAGS = -ffreestanding -m32 -nostdlib -std=gnu99 -fomit-frame-pointer -O2
+CFLAGS = -ffreestanding -m32 -nostdlib -std=gnu99 -fomit-frame-pointer -O1 -g
 
 .PHONY: clean
 
@@ -9,10 +9,10 @@ CFLAGS = -ffreestanding -m32 -nostdlib -std=gnu99 -fomit-frame-pointer -O2
 %.o: %.c *.h
 	gcc $(CFLAGS) -o $@ -c $<
 
-OBJS = main.o start.o io.o vga.o gdt.o int.o pic.o
+OBJS = main.o start.o io.o vga.o gdt.o int.o pic.o pmalloc.o page.o
 
-kernel: $(OBJS)
-	gcc $(CFLAGS) -o $@ $(OBJS)
+kernel: $(OBJS) kernel.lds
+	gcc $(CFLAGS) -o $@ $(OBJS) -Wl,-T,kernel.lds
 
 clean:
 	rm -f *.o kernel
