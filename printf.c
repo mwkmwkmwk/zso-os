@@ -26,7 +26,7 @@ void puts(const char* str) {
 
 void uint32_to_str(char* dst, uint32_t val, int base) {
 	char* org = dst;
-	uint64_t digit;
+	int digit;
 	do {
 		digit = (val % base);
 		if (digit < 10)
