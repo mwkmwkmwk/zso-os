@@ -1,6 +1,10 @@
 #include "gdt.h"
-#include "pic.h"
 #include "io.h"
+#include "mb.h"
+#include "page.h"
+#include "panic.h"
+#include "pic.h"
+#include "pmalloc.h"
 #include "printf.h"
 
 void self_test() {
@@ -14,6 +18,13 @@ void self_test() {
 	printf("0x123 == 0x%x\n", 0x123);
 	printf("'x' == '%c'\n", 'x');
 	printf("\"asdf%%123\" == \"%s\"\n", "asdf%123");
+}
+
+_Noreturn void panic(const char *arg) {
+	printf(arg);
+	while (1) {
+		asm volatile("cli\nhlt":::);
+	}
 }
 
 void sys_hello() {
@@ -35,8 +46,10 @@ extern char asm_sys_hello[];
 extern char asm_div_zero[];
 extern char asm_irq1[];
 
-void main() {
+void main(struct mb_header *mbhdr) {
 	init_gdt();
+	init_pmalloc(mbhdr);
+	init_paging();
 	set_idt(0x20, (uint32_t)asm_sys_hello, 0);
 	set_idt(0x00, (uint32_t)asm_div_zero, 0);
 	init_pic();
