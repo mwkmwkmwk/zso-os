@@ -11,10 +11,26 @@ struct gdt_entry {
 	uint8_t base_hi;
 };
 
+extern char end_stack;
+
+struct tss {
+	uint32_t link;
+	uint32_t esp0;
+	uint32_t ss0;
+	uint32_t junk[0x17];
+} tss = {
+	0,
+	(uint32_t)&end_stack,
+	0x10,
+};
+
 struct gdt_entry gdt[] = {
 	{ 0 },
 	{ 0xffff, 0, 0, 0x9b, 0xcf, 0 },
 	{ 0xffff, 0, 0, 0x93, 0xcf, 0 },
+	{ 0x67, 0, 0, 0x89, 0x40, 0 },
+	{ 0xffff, 0, 0, 0xfb, 0xcf, 0 },
+	{ 0xffff, 0, 0, 0xf3, 0xcf, 0 },
 };
 
 struct idt_entry {
@@ -35,7 +51,7 @@ struct lgdt_arg {
 	uint32_t base;
 } lgdt_arg = {
 	0,
-	0x17,
+	0x2f,
 	(uint32_t)&gdt,
 }, lidt_arg = {
 	0,
@@ -44,6 +60,10 @@ struct lgdt_arg {
 };
 
 void init_gdt() {
+	uint32_t tss_i = (uint32_t)&tss;
+	gdt[3].base_lo = tss_i & 0xffff;
+	gdt[3].base_mid = tss_i >> 16 & 0xff;
+	gdt[3].base_hi = tss_i >> 24 & 0xff;
 	asm volatile (
 		"lgdt %0\n"
 		:
@@ -69,11 +89,17 @@ void init_gdt() {
 		"1:\n"
 		:::
 	);
+	asm volatile (
+		"ltr %0\n"
+		:
+		: "r"((uint16_t)0x18)
+		:
+	);
 }
 
-void set_idt(int idx, uint32_t addr, bool block) {
+void set_idt(int idx, uint32_t addr, bool block, int pl) {
 	idt[idx].addr_lo = addr & 0xffff;
 	idt[idx].addr_hi = addr >> 16 & 0xffff;
 	idt[idx].seg = 0x8;
-	idt[idx].attr = (block ? 0x8e : 0x8f);
+	idt[idx].attr = (block ? 0x8e : 0x8f) | pl << 5;
 }

@@ -3,6 +3,22 @@
 #include "string.h"
 #include "vga.h"
 
+void *memcpy(void *dst, const void *src, size_t num) {
+	int i;
+	for (i = 0; i < num ; i++) {
+		((char*)dst)[i] = ((char*)src)[i];
+	}
+	return dst;
+}
+
+void *memset(void *dst, int src, size_t num) {
+	int i;
+	for (i = 0; i < num ; i++) {
+		((char*)dst)[i] = src;
+	}
+	return dst;
+}
+
 void putc(char ch) {
 	const int CONSOLE_WIDTH = 80;
 	int cur_pos = get_cursor();
@@ -15,6 +31,11 @@ void putc(char ch) {
 		cur->ch = ch;
 		cur->attr = 0x0a;
 		cur_pos += 2;
+	}
+	if (cur_pos == CONSOLE_WIDTH * 2 * 25) {
+		memcpy((void *)0xb8000, (void *)(0xb8000 + 160), 24 * 80 * 2);
+		cur_pos -= 160;
+		memset((void *)(0xb8000 + 24 * 80 * 2), 0, 160);
 	}
 	set_cursor(cur_pos);
 }

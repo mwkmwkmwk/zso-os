@@ -9,7 +9,7 @@ CFLAGS = -ffreestanding -m32 -nostdlib -std=gnu99 -fomit-frame-pointer -O1 -g
 %.o: %.c *.h
 	gcc $(CFLAGS) -o $@ -c $<
 
-OBJS = main.o start.o io.o vga.o gdt.o int.o pic.o pmalloc.o page.o printf.o string.o
+OBJS = main.o start.o io.o vga.o gdt.o int.o pic.o pmalloc.o page.o printf.o string.o user.o
 
 kernel: $(OBJS) kernel.lds
 	gcc $(CFLAGS) -o $@ $(OBJS) -Wl,-T,kernel.lds

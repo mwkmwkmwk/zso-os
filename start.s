@@ -24,3 +24,5 @@ multiboot_header:
 stack:
 .skip 0x10000
 end_stack:
+
+.global end_stack

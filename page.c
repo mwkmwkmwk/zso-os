@@ -3,6 +3,8 @@
 
 extern char kernel_start;
 extern char kernel_end;
+extern char user_start;
+extern char user_end;
 
 static uint32_t *boot_pd;
 
@@ -16,17 +18,17 @@ void boot_map_page(void *virt, uint32_t phys, uint32_t flags) {
 		ppt = (void *)pt;
 		for (int i = 0; i < 1024; i++)
 			ppt[i] = 0;
-		boot_pd[pdi] = pt | 1;
+		boot_pd[pdi] = pt | 7;
 	}
 	ppt = (void *)(boot_pd[pdi] & ~0xfff);
 	ppt[pti] = phys | flags;
 }
 
-void map_range_id(void *start, void *end) {
+void map_range_id(void *start, void *end, int flags) {
 	uint32_t istart = (uint32_t)start;
 	uint32_t iend = (uint32_t)end;
 	for (uint32_t addr = istart; addr < iend; addr += PAGE_SIZE) {
-		boot_map_page((void *)addr, addr, MAP_KERNEL);
+		boot_map_page((void *)addr, addr, MAP_KERNEL | flags);
 	}
 }
 
@@ -41,8 +43,9 @@ void init_paging() {
 	for (int i = 0; i < 1024; i++)
 		boot_pd[i] = 0;
 	boot_pd[1023] = pd | 1;
-	map_range_id(&kernel_start, &kernel_end);
-	map_range_id((void *)0xb8000, (void *)0xc0000);
+	map_range_id(&user_start, &user_end, 6);
+	map_range_id(&kernel_start, &kernel_end, 0);
+	map_range_id((void *)0xb8000, (void *)0xc0000, 0);
 	uint32_t cr0;
 	asm volatile (
 		"movl %%cr0, %0\n":

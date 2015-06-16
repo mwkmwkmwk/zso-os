@@ -6,6 +6,8 @@
 
 uint32_t free_root = FREE_END;
 
+extern char user_start;
+extern char user_end;
 extern char kernel_start;
 extern char kernel_end;
 
@@ -56,6 +58,8 @@ void init_pmalloc(struct mb_header *mbhdr) {
 			if (collide(page, mbhdr, mbhdr+1))
 				continue;
 			if (collide(page, mbhdr->mmap_addr, mbhdr->mmap_addr + mbhdr->mmap_length))
+				continue;
+			if (collide(page, &user_start, &user_end))
 				continue;
 			if (collide(page, &kernel_start, &kernel_end))
 				continue;
