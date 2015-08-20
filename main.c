@@ -24,7 +24,7 @@ void self_test() {
 _Noreturn void panic(const char *arg) {
 	printf(arg);
 	while (1) {
-		asm volatile("cli\nhlt":::);
+		asm volatile("cli; hlt":::);
 	}
 }
 
@@ -34,12 +34,12 @@ void sys_hello() {
 
 void div_zero() {
 	printf("Division by 0 - system halted\n");
-	asm volatile("cli\nhlt");
+	asm volatile("cli; hlt");
 }
 
 void err_gp() {
 	printf("General protection - system halted\n");
-	asm volatile("cli\nhlt");
+	asm volatile("cli; hlt");
 }
 
 void err_page() {
@@ -50,7 +50,7 @@ void err_page() {
 		:
 	);
 	printf("Page fault (%x) - system halted\n", cr2);
-	asm volatile("cli\nhlt");
+	asm volatile("cli; hlt");
 }
 
 void irq1() {
@@ -79,7 +79,7 @@ void main(struct mb_header *mbhdr) {
 
 	self_test();
 
-
+	// Jump to usermode
 	asm volatile(
 		"mov $0x00, %%ax\n"
 		"mov %%ax, %%ds\n"
@@ -96,6 +96,7 @@ void main(struct mb_header *mbhdr) {
 		: "i"(2 | EFLAGS_IF)
 	);
 
+	printf("Error: This code should have never get reached!\n");
 	while (1) {
 		asm volatile ("hlt");
 	}

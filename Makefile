@@ -3,6 +3,9 @@ CFLAGS = -ffreestanding -m32 -nostdlib -std=gnu99 -fomit-frame-pointer -O1 -g
 
 .PHONY: clean
 
+%.o: %.asm
+	nasm -f elf32 $< -o $@ 
+
 %.o: %.s
 	gcc $(CFLAGS) -o $@ -c $<
 
