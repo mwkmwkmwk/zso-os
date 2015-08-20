@@ -93,7 +93,7 @@ void main(struct mb_header *mbhdr) {
 		"pushl $user_main\n"       // ret offset
 		"iretl\n"
 		:
-		: "i"(2 | EFLAGS_IF) // EFLAGS (all clear, reserved bit at pos 1)
+		: "i"(2 | EFLAGS_IF) // EFLAGS (reserved bit at pos 1)
 	);
 
 	printf("Error: This code should have never get reached!\n");
