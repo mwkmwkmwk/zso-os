@@ -11,7 +11,6 @@
 void self_test() {
 	asm volatile(
 		"int $0x20\n" // Hello world!
-		:::
 	);
 
 	// printf tests
@@ -45,8 +44,9 @@ void err_gp() {
 void err_page() {
 	uint32_t cr2;
 	asm volatile (
-		"movl %%cr2, %0\n":
-		"=r"(cr2):
+		"movl %%cr2, %0\n"
+		: "=r"(cr2)
+		:
 		:
 	);
 	printf("Page fault (%x) - system halted\n", cr2);
@@ -88,12 +88,12 @@ void main(struct mb_header *mbhdr) {
 		"mov %%ax, %%gs\n"
 		"pushl $0x2b\n"            // SS
 		"pushl $user_stack+4096\n" // ESP
-		"pushl %0\n"          // EFLAGS (all clear, reserved bit at pos 1)
+		"pushl %0\n"               // EFLAGS 
 		"pushl $0x23\n"            // ret segment
 		"pushl $user_main\n"       // ret offset
 		"iretl\n"
 		:
-		: "i"(2 | EFLAGS_IF)
+		: "i"(2 | EFLAGS_IF) // EFLAGS (all clear, reserved bit at pos 1)
 	);
 
 	printf("Error: This code should have never get reached!\n");
