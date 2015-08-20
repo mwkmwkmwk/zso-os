@@ -1,3 +1,5 @@
+#pragma once
+
 #include "mb.h"
 
 void init_pmalloc(struct mb_header *mbhdr);

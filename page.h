@@ -1,5 +1,4 @@
-#ifndef PAGE_H
-#define PAGE_H
+#pragma once
 
 #include <stdint.h>
 
@@ -12,5 +11,3 @@ void map_page(void *virt, uint32_t phys, uint32_t flags);
 #define PAGE_SIZE 0x1000
 
 void init_paging();
-
-#endif

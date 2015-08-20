@@ -1,5 +1,5 @@
-#ifndef MB_H
-#define MB_H
+#pragma once
+
 #include <stdint.h>
 
 struct mb_header {
@@ -25,5 +25,3 @@ struct mb_mmap {
 	uint32_t length_hi;
 	uint32_t type;
 };
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef VGA_H
-#define VGA_H
+#pragma once
 
 #include <stdint.h>
 
@@ -12,5 +11,3 @@ extern struct vga_char framebuffer[25][80];
 
 void set_cursor(uint16_t addr);
 uint16_t get_cursor();
-
-#endif
