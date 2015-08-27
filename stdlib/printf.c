@@ -1,7 +1,7 @@
 #include <stdarg.h>
 
 #include "string.h"
-#include "vga.h"
+#include "video/vga.h"
 
 void *memcpy(void *dst, const void *src, size_t num) {
 	int i;

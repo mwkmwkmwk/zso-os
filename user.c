@@ -1,8 +1,8 @@
 #include <stdint.h>
 
 int user_main() {
-	asm volatile ("int $0x20 \n":::);
-	asm volatile ("int $0x20 \n":::);
+	asm volatile ("int $0x20 \n");
+	asm volatile ("int $0x20 \n");
 	while (1);
 }
 

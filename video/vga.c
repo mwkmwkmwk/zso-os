@@ -1,5 +1,5 @@
+#include "io/io.h"
 #include "vga.h"
-#include "io.h"
 
 uint8_t get_register(uint8_t idx) {
 	outb(0x3d4, idx);

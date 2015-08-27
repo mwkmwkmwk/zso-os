@@ -1,6 +1,7 @@
+#include <stdbool.h>
+
 #include "pmalloc.h"
 #include "panic.h"
-#include <stdbool.h>
 
 #define PAGE_SIZE 0x1000
 

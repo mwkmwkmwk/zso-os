@@ -1,12 +1,12 @@
-#include "common.h"
-#include "gdt.h"
-#include "io.h"
-#include "mb.h"
-#include "page.h"
-#include "panic.h"
-#include "pic.h"
-#include "pmalloc.h"
-#include "printf.h"
+#include <common.h>
+#include <mem/gdt.h>
+#include <io/io.h>
+#include <boot/mb.h>
+#include <mem/page.h>
+#include <panic.h>
+#include <io/pic.h>
+#include <mem/pmalloc.h>
+#include <stdlib/printf.h>
 
 void self_test() {
 	asm volatile(
@@ -23,7 +23,7 @@ void self_test() {
 _Noreturn void panic(const char *arg) {
 	printf(arg);
 	while (1) {
-		asm volatile("cli; hlt":::);
+		asm volatile("cli; hlt");
 	}
 }
 
