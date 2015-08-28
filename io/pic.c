@@ -2,17 +2,21 @@
 #include "pic.h"
 
 void init_pic() {
-	outb(0x20, 0x11);
-	outb(0x21, 0xf0);
-	outb(0x21, 0x04);
-	outb(0x21, 0x01);
+	// Remap PIC interrupts
+	outb(PIC1_CMD,  0x11);
+	outb(PIC1_DATA, PIC_INT_START);
+	outb(PIC1_DATA, 0x04);
+	outb(PIC1_DATA, 0x01);
 
-	outb(0xa0, 0x11);
-	outb(0xa1, 0xf8);
-	outb(0xa1, 0x02);
-	outb(0xa1, 0x01);
+	outb(PIC2_CMD,  0x11);
+	outb(PIC2_DATA, PIC_INT_START + 8);
+	outb(PIC2_DATA, 0x02);
+	outb(PIC2_DATA, 0x01);
 
-	outb(0x21, 0xff);
-	outb(0xa1, 0xff);
+	// Silence all interrupts (no idt handlers yet)
+	outb(PIC1_DATA, 0xff);
+	outb(PIC2_DATA, 0xff);
+
+	// Enable interrupts
 	asm volatile ("sti":::);
 }

@@ -43,7 +43,7 @@ struct idt_entry {
 };
 
 struct idt_entry idt[256] = {
-	0
+	{0}
 };
 
 struct lgdt_arg {
@@ -97,9 +97,9 @@ void init_gdt() {
 	);
 }
 
-void set_idt(int idx, uint32_t addr, bool block, int pl) {
+void set_idt(int idx, uint32_t addr, bool block, int priv_level) {
 	idt[idx].addr_lo = addr & 0xffff;
 	idt[idx].addr_hi = addr >> 16 & 0xffff;
 	idt[idx].seg = 0x8;
-	idt[idx].attr = (block ? 0x8e : 0x8f) | pl << 5;
+	idt[idx].attr = (block ? 0x8e : 0x8f) | priv_level << 5;
 }

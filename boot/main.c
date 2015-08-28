@@ -1,12 +1,14 @@
-#include <common.h>
-#include <mem/gdt.h>
-#include <io/io.h>
-#include <boot/mb.h>
-#include <mem/page.h>
-#include <panic.h>
-#include <io/pic.h>
-#include <mem/pmalloc.h>
-#include <stdlib/printf.h>
+#include "boot/mb.h"
+#include "common.h"
+#include "io/interrupts.h"
+#include "io/io.h"
+#include "io/keyboard.h"
+#include "io/pic.h"
+#include "mem/gdt.h"
+#include "mem/page.h"
+#include "mem/pmalloc.h"
+#include "panic.h"
+#include "stdlib/printf.h"
 
 void self_test() {
 	asm volatile(
@@ -18,10 +20,22 @@ void self_test() {
 	printf("0x123def == 0x%x\n", 0x123def);
 	printf("'x' == '%c'\n", 'x');
 	printf("\"asdf%%123\" == \"%s\"\n", "asdf%123");
+
+	// Div zero test
+	// {
+	// 	volatile int zero = 0;
+	// 	volatile int res = zero / zero;
+	// }
+
+	// Page fault test
+	// {
+	// 	char* ptr = (char*)0x90EEDDCC;
+	// 	volatile int res = ptr[0];
+	// }
 }
 
 _Noreturn void panic(const char *arg) {
-	printf(arg);
+	puts(arg);
 	while (1) {
 		asm volatile("cli; hlt");
 	}
@@ -32,13 +46,11 @@ void sys_hello() {
 }
 
 void div_zero() {
-	printf("Division by 0 - system halted\n");
-	asm volatile("cli; hlt");
+	panic("Division by 0 - system halted\n");
 }
 
 void err_gp() {
-	printf("General protection - system halted\n");
-	asm volatile("cli; hlt");
+	panic("General protection - system halted\n");
 }
 
 void err_page() {
@@ -53,29 +65,21 @@ void err_page() {
 	asm volatile("cli; hlt");
 }
 
-void irq1() {
-	uint8_t b = inb(0x60);
-	printf("KEY %x\n", b);
-	outb(0x20, 0x20);
-}
-
 extern char asm_sys_hello[];
 extern char asm_div_zero[];
 extern char asm_err_gp[];
 extern char asm_err_page[];
-extern char asm_irq1[];
 
 void main(struct mb_header *mbhdr) {
 	init_gdt();
 	init_pmalloc(mbhdr);
 	init_paging();
-	set_idt(0x20, (uint32_t)asm_sys_hello, 0, 3);
-	set_idt(0x00, (uint32_t)asm_div_zero,  0, 0);
-	set_idt(0x0d, (uint32_t)asm_err_gp,    0, 0);
-	set_idt(0x0e, (uint32_t)asm_err_page,  0, 0);
+	register_int_handler(0x20, sys_hello, false, 3);
+	register_int_handler(INT_DIV_ERROR,  div_zero, false, 0);
+	register_int_handler(INT_GEN_PROT,   err_gp,   false, 0);
+	register_int_handler(INT_PAGE_FAULT, err_page, false, 0);
 	init_pic();
-	set_idt(0xf1, (uint32_t)asm_irq1,      1, 0);
-	outb(0x21, 0xfd);
+	init_keyboard();
 
 	self_test();
 
