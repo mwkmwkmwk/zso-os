@@ -1,5 +1,19 @@
 #include "string.h"
 
+void* memcpy(void* dst, const void* src, size_t num) {
+	for (int i = 0; i < num ; i++) {
+		((char*)dst)[i] = ((char*)src)[i];
+	}
+	return dst;
+}
+
+void* memset(void* dst, int src, size_t num) {
+	for (int i = 0; i < num ; i++) {
+		((char*)dst)[i] = src;
+	}
+	return dst;
+}
+
 size_t strlen(const char* str) {
 	size_t len = 0;
 	while (*str++)

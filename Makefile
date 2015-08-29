@@ -1,6 +1,6 @@
 
 CFLAGS = -ffreestanding -m32 -nostdlib -std=gnu99 -fomit-frame-pointer -O1 \
-         -g -I . -Wall
+         -g -I . -Wall #-D_DEBUG
 MODULES = boot io mem stdlib
 
 .PHONY: clean
@@ -21,9 +21,11 @@ OBJS = boot/main.o 		\
        io/io.o 			\
        io/keyboard.o 	\
        io/pic.o 		\
+       mem/kalloc.o 	\
        mem/gdt.o 		\
        mem/page.o 		\
        mem/pmalloc.o 	\
+       stdlib/math.o 	\
        stdlib/printf.o 	\
        stdlib/string.o 	\
        user.o 			\

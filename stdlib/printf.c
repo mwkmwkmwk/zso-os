@@ -3,21 +3,7 @@
 #include "string.h"
 #include "video/vga.h"
 
-void *memcpy(void *dst, const void *src, size_t num) {
-	int i;
-	for (i = 0; i < num ; i++) {
-		((char*)dst)[i] = ((char*)src)[i];
-	}
-	return dst;
-}
-
-void *memset(void *dst, int src, size_t num) {
-	int i;
-	for (i = 0; i < num ; i++) {
-		((char*)dst)[i] = src;
-	}
-	return dst;
-}
+#define TAB_SIZE 4
 
 void putc(char ch) {
 	const int CONSOLE_WIDTH = 80;
@@ -26,8 +12,18 @@ void putc(char ch) {
 	
 	if (ch == '\n') {
 		cur_pos += CONSOLE_WIDTH*2 - cur_pos % (CONSOLE_WIDTH*2);
-	}
-	else {
+	} else if (ch == '\b') {
+		if (cur_pos % (CONSOLE_WIDTH*2) > 0)
+			cur_pos -= 2;
+		(cur-1)->ch = ' ';
+		(cur-1)->attr = 0x0a;
+	} else if (ch == '\t') {
+		int pos = (cur_pos % (CONSOLE_WIDTH*2))/2;
+		int spaces = TAB_SIZE - pos % TAB_SIZE;
+		while (spaces--)
+			putc(' ');
+		cur_pos = get_cursor();
+	} else {
 		cur->ch = ch;
 		cur->attr = 0x0a;
 		cur_pos += 2;

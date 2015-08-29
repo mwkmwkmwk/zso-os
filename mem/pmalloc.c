@@ -26,7 +26,7 @@ uint32_t boot_palloc() {
 	return res;
 }
 
-bool collide(uint32_t page, void *start, void *end) {
+static bool collide(uint32_t page, void *start, void *end) {
 	uint32_t pstart = page;
 	uint32_t pend = page + PAGE_SIZE;
 	uint32_t ostart = (uint32_t)start;

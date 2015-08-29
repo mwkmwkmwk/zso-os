@@ -1,3 +1,6 @@
+#include <stdbool.h>
+
+#include "stdlib/assert.h"
 #include "boot/mb.h"
 #include "common.h"
 #include "io/interrupts.h"
@@ -7,8 +10,10 @@
 #include "mem/gdt.h"
 #include "mem/page.h"
 #include "mem/pmalloc.h"
+#include "mem/kalloc.h"
 #include "panic.h"
 #include "stdlib/printf.h"
+#include "stdlib/string.h"
 
 void self_test() {
 	asm volatile(
@@ -32,6 +37,11 @@ void self_test() {
 	// 	char* ptr = (char*)0x90EEDDCC;
 	// 	volatile int res = ptr[0];
 	// }
+
+	// kalloc test
+	char* ptr = kalloc(10);
+	memset(ptr, 1, 10);
+	kfree(ptr);
 }
 
 _Noreturn void panic(const char *arg) {
@@ -65,15 +75,11 @@ void err_page() {
 	asm volatile("cli; hlt");
 }
 
-extern char asm_sys_hello[];
-extern char asm_div_zero[];
-extern char asm_err_gp[];
-extern char asm_err_page[];
-
 void main(struct mb_header *mbhdr) {
 	init_gdt();
 	init_pmalloc(mbhdr);
 	init_paging();
+	init_kalloc();
 	register_int_handler(0x20, sys_hello, false, 3);
 	register_int_handler(INT_DIV_ERROR,  div_zero, false, 0);
 	register_int_handler(INT_GEN_PROT,   err_gp,   false, 0);
