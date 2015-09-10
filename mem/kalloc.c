@@ -1,57 +1,65 @@
 #include "kalloc.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 
 #include "mem/page.h"
+#include "panic.h"
 #include "stdlib/string.h"
 
 // A totally unoptimal heap allocator
 
-// Free chunk layout:
-// 		[free_block stuct]
-//      [free buffer with free_block.size bytes]
-// Allocated chunk:
-// 		[free_block stuct] <- only "size" field is valid!
-//		[user buffer]
+// Heap block layout:
+// 		[heap_block stuct]
+//      [free buffer with heap_block.size bytes]
 
-struct free_block {
-	struct free_block* prev;
-	struct free_block* next;
+struct heap_block {
+	struct heap_block* prev;
+	struct heap_block* next;
 	uint32_t size;
+	bool free; // TODO: this bool wastes 4 bytes for every allocation
 };
 
 // Free blocks list head, should never be unlinked
-struct free_block free_blocks_head = {
-	prev: &free_blocks_head,
-	next: &free_blocks_head,
+// The list is always sorted asceding (prev < this < next, excluding the head an its neighbours)
+struct heap_block heap_blocks_head = {
+	prev: &heap_blocks_head,
+	next: &heap_blocks_head,
 	size: 0
 };
 
 void init_kalloc(void) {
-	struct free_block* block = (struct free_block*)KERNEL_HEAP_START;
-	block->size = KERNEL_HEAP_SIZE - sizeof(struct free_block);
-	kfree(block + 1);
+	struct heap_block* block = (struct heap_block*)KERNEL_HEAP_START;
+	block->size = KERNEL_HEAP_SIZE - sizeof(struct heap_block);
+	block->prev = block->next = &heap_blocks_head;
+	block->free = true;
+	heap_blocks_head.next = heap_blocks_head.prev = block;
 }
 
 void* kalloc(uint32_t size) {
-	struct free_block* it;
+	struct heap_block* it;
 
 	// Find a suitable block
-	for (it = free_blocks_head.next; it != &free_blocks_head; it = it->next) {
-		if (it->size >= size)
+	for (it = heap_blocks_head.next; it != &heap_blocks_head; it = it->next) {
+		if (it->free && it->size >= size)
 			break;
 	}
+	if (it == &heap_blocks_head)
+		panic("No more free space on kernel heap to satisfy allocation request!");
 	
-	// Unlink from the free list
-	it->prev->next = it->next;
-	it->next->prev = it->prev;
+	it->free = false;
 
 	// Split the space, if it makes any sense
-	if (it->size > size + sizeof(struct free_block)) {
-		struct free_block* block = (struct free_block*)((char*)(it + 1) + size);
-		block->size = it->size - size - sizeof(struct free_block);
+	if (it->size > size + sizeof(struct heap_block)) {
+		struct heap_block* block = (struct heap_block*)((char*)(it + 1) + size);
+		block->size = it->size - size - sizeof(struct heap_block);
+		block->free = true;
+		block->prev = it;
+		block->next = it->next;
+		it->next = block;
+		block->next->prev = block;
 		it->size = size;
-		kfree(block + 1);
+		//kfree(block + 1);
 	}
 
 	#ifdef _DEBUG
@@ -61,16 +69,21 @@ void* kalloc(uint32_t size) {
 	return it + 1;
 }
 
-// ptr points to user buffer (so, after the free_block struct)
+// ptr points to user buffer (so, after the heap_block struct)
 void kfree(void* ptr) {
-	struct free_block* block = ((struct free_block*)ptr) - 1;
+	struct heap_block* block = ((struct heap_block*)ptr) - 1;
 
-	// Add the block to the free list
-	block->prev = &free_blocks_head;
-	block->next = free_blocks_head.next;
-	free_blocks_head.next = block;
-	block->next->prev = block;
+	block->free = true;
 	
+	// Merge with neighbours if possible
+	if (block->next->free) {
+		block->size += block->next->size + sizeof(struct heap_block);
+	}
+	if (block->prev->free) {
+		block->prev->size += block->size + sizeof(struct heap_block);
+		block = block->prev;
+	}
+
 	#ifdef _DEBUG
 	memset(ptr, 0xCC, block->size);
 	#endif

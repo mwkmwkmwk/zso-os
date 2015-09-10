@@ -32,8 +32,7 @@ common_int_entry:
 	
 	; call handler
 	mov eax, [esp + 0x14] ; Interrupt number pushed by int_entry_X
-	mov eax, [int_handlers + eax*4]
-	call eax
+	call dword [int_handlers + eax*4]
 	
 	; return
 	pop es
