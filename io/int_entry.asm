@@ -19,6 +19,9 @@ extern int_handlers
 %undef i
 
 common_int_entry:
+	push ebp
+	mov ebp, esp
+
 	push eax
 	push ecx
 	push edx
@@ -30,9 +33,20 @@ common_int_entry:
 	mov ds, ax
 	mov es, ax
 	
-	; call handler
-	mov eax, [esp + 0x14] ; Interrupt number pushed by int_entry_X
-	call dword [int_handlers + eax*4]
+	; TODO: align stack to 16B before the call
+
+	; Arguments
+	push edi
+	push esi
+	push edx
+	push ecx
+	push ebx
+	push dword[ebp - 4] ; pushed eax
+
+	mov eax, [ebp + 4] ; Interrupt number pushed by int_entry_X
+	call dword [int_handlers + eax*4] ; call C handler
+
+	add esp, 6*4
 	
 	; return
 	pop es
@@ -40,6 +54,9 @@ common_int_entry:
 	pop edx
 	pop ecx
 	pop eax
+
+	mov esp, ebp
+	pop ebp
 	add esp, 4 ; pop interrupt number
 	iret
 

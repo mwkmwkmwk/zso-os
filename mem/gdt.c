@@ -21,7 +21,7 @@ struct tss {
 	uint32_t junk[0x17];
 } tss = {
 	0,
-	(uint32_t)&end_stack,
+	(uint32_t)&end_stack, // hmm, is that really correct?
 	0x10,
 };
 

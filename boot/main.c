@@ -14,10 +14,12 @@
 #include "panic.h"
 #include "stdlib/printf.h"
 #include "stdlib/string.h"
+#include "syscalls/syscalls.h"
 
 void self_test() {
 	asm volatile(
-		"int $0x20\n" // Hello world!
+		"movl $0, %eax \n"
+		"int $0x20 \n" // Hello world!
 	);
 
 	// printf tests
@@ -51,10 +53,6 @@ _Noreturn void panic(const char *arg) {
 	}
 }
 
-void sys_hello() {
-	printf("Hello, world\n");
-}
-
 void div_zero() {
 	panic("Division by 0 - system halted\n");
 }
@@ -80,10 +78,10 @@ void main(struct mb_header *mbhdr) {
 	init_pmalloc(mbhdr);
 	init_paging();
 	init_kalloc();
-	register_int_handler(0x20, sys_hello, false, 3);
-	register_int_handler(INT_DIV_ERROR,  div_zero, false, 0);
-	register_int_handler(INT_GEN_PROT,   err_gp,   false, 0);
-	register_int_handler(INT_PAGE_FAULT, err_page, false, 0);
+	init_syscalls();
+	register_int_handler(INT_DIV_ERROR,  div_zero,  false, 0);
+	register_int_handler(INT_GEN_PROT,   err_gp,    false, 0);
+	register_int_handler(INT_PAGE_FAULT, err_page,  false, 0);
 	init_pic();
 	init_keyboard();
 

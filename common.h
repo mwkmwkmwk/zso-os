@@ -23,3 +23,5 @@
 #define EFLAGS_VIF (1 << 19)
 #define EFLAGS_VIP (1 << 20)
 #define EFLAGS_ID (1 << 21)
+
+#define _countof(arr) (sizeof(arr) / sizeof((arr)[0]))

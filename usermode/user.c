@@ -1,8 +1,9 @@
 #include <stdint.h>
 
+#include "user_syscalls.h"
+
 int user_main() {
-	asm volatile ("int $0x20 \n");
-	asm volatile ("int $0x20 \n");
+	syscall(SYS_TEST, 1, 2, 3, 4, 5);
 	while (1);
 }
 

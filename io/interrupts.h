@@ -26,6 +26,11 @@
 #define INT_MACHINE_CHECK	18 // Machine Check Error codes (if any) and source are model dependent.
 #define INT_SIMD_EXC	19 // SIMD Floating-Point Exception SIMD Floating-Point Instruction5
 
+// 20-31: reversed
+
+// User interrupts
+#define INT_SYSCALL		0x20
+
 // PIC interrupts
 
 #define INT_PIT         PIC_TO_CPU(0)
@@ -45,7 +50,8 @@
 #define INT_ATA1		PIC_TO_CPU(14)
 #define INT_ATA2		PIC_TO_CPU(15)
 
-typedef void (*int_handler_t)(void);
+// Receives following arguments: eax, ebx, ecx, edx, esi, edi
+typedef void (*int_handler_t)();
 
 // Registered interrupt handlers
 extern int_handler_t int_handlers[256];

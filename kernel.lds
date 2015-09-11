@@ -6,12 +6,12 @@ SECTIONS {
 	}
 	.user.text : ALIGN(0x1000) {
 		user_start = .;
-		user.o(.text)
-		user.o(.rodata*)
+		usermode/*.o(.text)
+		usermode/*.o(.rodata*)
 	}
 	.user.data : ALIGN(0x1000) {
-		user.o(.data)
-		user.o(.bss)
+		usermode/*.o(.data)
+		usermode/*.o(.bss)
 	}
 	.text : ALIGN(0x1000) {
 		user_end = .;

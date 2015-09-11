@@ -36,9 +36,10 @@ void map_range_id(void* phys_start, void* phys_end, void* virt_start, int flags)
 void init_paging() {
 	uint32_t pd = boot_palloc();
 	asm volatile (
-		"movl %0, %%cr3\n":
+		"movl %0, %%cr3\n"
 		:
-		"r"(pd):
+		: "r"(pd)
+		:
 	);
 	boot_pd = (void *)pd;
 	for (int i = 0; i < 1024; i++)
@@ -56,14 +57,16 @@ void init_paging() {
 
 	uint32_t cr0;
 	asm volatile (
-		"movl %%cr0, %0\n":
-		"=r"(cr0):
+		"movl %%cr0, %0\n"
+		: "=r"(cr0)
+		:
 		:
 	);
 	cr0 |= 0x80000000;
 	asm volatile (
-		"movl %0, %%cr0\n":
+		"movl %0, %%cr0\n"
 		:
-		"r"(cr0):
+		: "r"(cr0)
+		:
 	);
 }
