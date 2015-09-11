@@ -12,4 +12,10 @@
 
 #define abs(x) \
 	({ __typeof__ (x) _x = (x); \
-	   _x < 0 ? -x : x; })
+	   _x < 0 ? -_x : _x; })
+
+#define align_up(x, alignment) \
+	((x) + ((x) - (x) % (alignment)) % (alignment))
+
+#define align_down(x, alignment) \
+	((x) - (x) % (alignment))

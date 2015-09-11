@@ -5,6 +5,7 @@
 
 #include "mem/page.h"
 #include "panic.h"
+#include "stdlib/math.h"
 #include "stdlib/string.h"
 
 // A totally unoptimal heap allocator
@@ -38,6 +39,8 @@ void init_kalloc(void) {
 
 void* kalloc(uint32_t size) {
 	struct heap_block* it;
+
+	size = align_up(size, 4);
 
 	// Find a suitable block
 	for (it = heap_blocks_head.next; it != &heap_blocks_head; it = it->next) {
