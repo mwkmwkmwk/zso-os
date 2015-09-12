@@ -7,6 +7,8 @@
 #include "io/io.h"
 #include "io/keyboard.h"
 #include "io/pic.h"
+#include "io/pit.h"
+#include "io/time.h"
 #include "mem/gdt.h"
 #include "mem/page.h"
 #include "mem/pmalloc.h"
@@ -15,8 +17,9 @@
 #include "stdlib/printf.h"
 #include "stdlib/string.h"
 #include "syscalls/syscalls.h"
+#include "utils/asm.h"
 
-void self_test() {
+void self_test(void) {
 	asm volatile(
 		"movl $0, %eax \n"
 		"int $0x20 \n" // Hello world!
@@ -28,6 +31,9 @@ void self_test() {
 	printf("'x' == '%c'\n", 'x');
 	printf("\"asdf%%123\" == \"%s\"\n", "asdf%123");
 
+	// printf("Sleeping for 1s... ");
+	// active_sleep(1000);
+	// printf("Done!\n");
 	// Div zero test
 	// {
 	// 	volatile int zero = 0;
@@ -53,15 +59,15 @@ _Noreturn void panic(const char *arg) {
 	}
 }
 
-void div_zero() {
+void div_zero(void) {
 	panic("Division by 0 - system halted\n");
 }
 
-void err_gp() {
+void err_gp(void) {
 	panic("General protection - system halted\n");
 }
 
-void err_page() {
+void err_page(void) {
 	uint32_t cr2;
 	asm volatile (
 		"movl %%cr2, %0\n"
@@ -84,7 +90,7 @@ void main(struct mb_header *mbhdr) {
 	register_int_handler(INT_PAGE_FAULT, err_page,  false, 0);
 	init_pic();
 	init_keyboard();
-
+	init_timers();
 	self_test();
 
 	// Jump to usermode

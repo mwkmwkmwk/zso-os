@@ -2,10 +2,11 @@
 
 #include "common.h"
 #include "io/interrupts.h"
+#include "io/time.h"
 #include "panic.h"
 #include "stdlib/printf.h"
-
-#include "syscall_table.h"
+#include "syscalls/syscall_table.h"
+#include "utils/asm.h"
 
 //
 // Syscall interface
@@ -24,15 +25,7 @@ struct syscall_handler_t syscall_table[] = {
 	#undef SYSCALL_TABLE_ARRAY_EXPAND
 };
 
-void sys_hello() {
-	printf("Hello, world\n");
-}
-
-void sys_test(int arg1, int arg2, int arg3, int arg4, int arg5) {
-	printf("test syscall called with args: %u %u %u %u %u\n", arg1, arg2, arg3, arg4, arg5);
-}
-
-void syscall_entry(int eax, int ebx, int ecx, int edx, int esi, int edi) {
+static void syscall_entry(int eax, int ebx, int ecx, int edx, int esi, int edi) {
 	if (eax < 0 || eax >= _countof(syscall_table))
 		panic("Invalid syscall number called!");
 	syscall_handler_func_t* handler = syscall_table[eax].handler;
@@ -43,4 +36,18 @@ void syscall_entry(int eax, int ebx, int ecx, int edx, int esi, int edi) {
 
 void init_syscalls(void) {
 	register_int_handler(INT_SYSCALL, syscall_entry, false, 3);
+}
+
+void sys_hello() {
+	printf("Hello, world\n");
+}
+
+void sys_test(int arg1, int arg2, int arg3, int arg4, int arg5) {
+	printf("test syscall called with args: %u %u %u %u %u\n", arg1, arg2, arg3, arg4, arg5);
+}
+
+void sys_sleep(ull ms) {
+	bool iflag = enable_interrupts();
+	active_sleep(ms);
+	set_int_flag(iflag);
 }

@@ -241,7 +241,7 @@ static void irq1(void) {
 	}
 
 RETURN:
-	outb(PIC1_CMD, 0x20);
+	finish_pic_interrupt();
 }
 
 void init_keyboard(void) {
@@ -250,7 +250,7 @@ void init_keyboard(void) {
 	reset_scan_state();
 	caps_state = false;
 	current_layout = us_qwerty_set1_ascii;
-	outb(0x21, 0b11111101); // 0x21: Master PIC data port, sets interrupt mask (1 - ignored)
+	enable_pic_interrupt(INT_KEYBOARD);
 }
 
 static void init_us_qwerty_set1(void) {
@@ -465,7 +465,6 @@ static void init_us_qwerty_set1(void) {
 	scantree_insert(&us_qwerty_set1, "\xE1\x1D\x45\xE1\x9D\xC5",	true,	true,	KEY_PAUSE);
 
 	memset(us_qwerty_set1_ascii, 0, sizeof(us_qwerty_set1_ascii));
-	//memset(us_qwerty_set1_ascii_shift, 0, sizeof(us_qwerty_set1_ascii));
 
 	us_qwerty_set1_ascii[KEY_1] 		= (struct key_to_ascii){'1', '!'};
 	us_qwerty_set1_ascii[KEY_2] 		= (struct key_to_ascii){'2', '@'};

@@ -41,7 +41,7 @@ void puts(const char* str) {
 		putc(*str++);
 }
 
-void uint32_to_str(char* dst, uint32_t val, int base) {
+void uint32_to_str(char* dst, uint32_t val, uint32_t base) {
 	char* org = dst;
 	int digit;
 	do {

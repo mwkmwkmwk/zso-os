@@ -35,7 +35,7 @@
 
 #define INT_PIT         PIC_TO_CPU(0)
 #define INT_KEYBOARD    PIC_TO_CPU(1)
-// 2: PIC1<->PIC2 internal (cascade interrupt)
+#define INT_PIC_CASCADE PIC_TO_CPU(2) // PIC1<->PIC2 internal (cascade interrupt), reserved
 #define INT_COM2		PIC_TO_CPU(3)
 #define INT_COM1		PIC_TO_CPU(4)
 #define INT_LPT2		PIC_TO_CPU(5)
