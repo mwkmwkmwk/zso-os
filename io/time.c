@@ -4,12 +4,12 @@
 #include "io/pit.h"
 #include "stdlib/printf.h"
 
-#define TICKS_PER_SEC 1000
+#define TICKS_PER_SEC 0x1000
 
 static volatile ull current_time = 0; // In 1/2^32 seconds
 
 static void pit_int_handler(void) {
-	current_time += (1llu << 32) / TICKS_PER_SEC;
+	current_time += (1llu << 32) / TICKS_PER_SEC; // TODO: this should be atomic
 
 	//static int cnt = 0;
 	//cnt++;
