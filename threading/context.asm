@@ -37,9 +37,6 @@ save_context:
 	pop ebp
 	retn
 
-; (struct context* context)
-; Use with care!
-; In case of no priv. change it has to use few bytes below current stack frame (esp from the time of interrupt)
 global load_context
 load_context:
 	mov ebp, [esp + 4] ; ebp = &context

@@ -24,4 +24,6 @@ struct context {
 
 // Not callable from C
 extern void* save_context;
-extern void* load_context;
+// Use with care. Really.
+// Modifies 12 bytes from the new threads' stack (esp-1 .. esp-12) if no privilege change occurs
+extern __attribute__((noreturn)) void load_context(struct context* context);

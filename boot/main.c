@@ -18,6 +18,7 @@
 #include "stdlib/string.h"
 #include "syscalls/syscalls.h"
 #include "threading/context.h"
+#include "threading/scheduler.h"
 #include "utils/asm.h"
 
 void self_test(void) {
@@ -88,6 +89,25 @@ void err_page(struct context** context_ptr) {
 	asm volatile("cli; hlt");
 }
 
+int kernel_main_thread(void* void_arg) {
+	uint arg = (uint)void_arg;
+	printf("Started kernel thread, arg = %x\n", arg);
+	while (1) {
+		printf("main work work work\n");
+		active_sleep(1000);
+	}
+}
+
+int kernel_worker_thread(void* void_arg) {
+	uint arg = (uint)void_arg;
+	printf("Started kernel thread, arg = %x\n", arg);
+	for (int i = 0; i < 10; i++) {
+		printf("work work work\n");
+		active_sleep(2000);
+	}
+	return 123;
+}
+
 void main(struct mb_header *mbhdr) {
 	init_gdt();
 	init_pmalloc(mbhdr);
@@ -101,6 +121,14 @@ void main(struct mb_header *mbhdr) {
 	init_keyboard();
 	init_timers();
 	self_test();
+
+	init_scheduler();
+	create_kernel_thread(kernel_main_thread,   (void*)0x12345678, "Kernel main");
+	create_kernel_thread(kernel_worker_thread, (void*)0xaaaaaaaa, "Kernel worker");
+	start_scheduling();
+
+
+	panic("Error: This code should have never get reached!");
 
 	// Jump to usermode
 	asm volatile(
@@ -118,9 +146,4 @@ void main(struct mb_header *mbhdr) {
 		:
 		: "i"(2 | EFLAGS_IF) // EFLAGS (reserved bit at pos 1)
 	);
-
-	printf("Error: This code should have never get reached!\n");
-	while (1) {
-		asm volatile ("hlt");
-	}
 }

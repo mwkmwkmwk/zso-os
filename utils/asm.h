@@ -54,3 +54,10 @@ inline ull atomic_add_8b(volatile ull* ptr, ull addend) {
 	}
 	return val;
 }
+
+ushort get_cs();
+ushort get_ds();
+ushort get_es();
+ushort get_fs();
+ushort get_gs();
+ushort get_ss();

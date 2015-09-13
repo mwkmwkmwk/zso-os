@@ -67,3 +67,34 @@ cmp_xchg_8b:
 	mov esp, ebp
 	pop ebp
 	retn
+
+%macro get 1
+	xor eax, eax
+	mov ax, %1
+	retn
+%endmacro
+
+global get_cs
+get_cs:
+	get cs
+
+global get_ds
+get_ds:
+	get ds
+
+global get_es
+get_es:
+	get es
+
+global get_fs
+get_fs:
+	get fs
+
+global get_gs
+get_gs:
+	get gs
+
+global get_ss
+get_ss:
+	get ss
+
