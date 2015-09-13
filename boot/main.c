@@ -132,23 +132,5 @@ void main(struct mb_header *mbhdr) {
 	create_user_thread(&user_main, (void*)0xca11ab1e, "User main");
 	start_scheduling();
 
-
-	//panic("Error: This code should have never get reached!");
-
-	// Jump to usermode
-	asm volatile(
-		"mov $0x00, %%ax\n"
-		"mov %%ax, %%ds\n"
-		"mov %%ax, %%es\n"
-		"mov %%ax, %%fs\n"
-		"mov %%ax, %%gs\n"
-		"pushl $0x2b\n"            // SS
-		"pushl $user_stack+4096\n" // ESP
-		"pushl %0\n"               // EFLAGS 
-		"pushl $0x23\n"            // ret segment
-		"pushl $user_main\n"       // ret offset
-		"iretl\n"
-		:
-		: "i"(2 | EFLAGS_IF) // EFLAGS (reserved bit at pos 1)
-	);
+	panic("Error: This code should have never get reached!");
 }

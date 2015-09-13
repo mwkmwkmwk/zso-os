@@ -65,6 +65,10 @@ void __attribute__((noreturn)) start_scheduling(void) {
 void kernel_thread_entry(thread_entry* start_addr, void* arg) {
 	printf("Thread `%s` created\n", current_thread->name);
 	int exit_code = start_addr(arg);
+	kill_current_thread(exit_code);
+}
+
+void __attribute__((noreturn)) kill_current_thread(int exit_code) {
 	printf("Thread `%s` exited with exit code %u\n", current_thread->name, exit_code);
 	bool iflag = disable_interrupts();
 	current_thread->state = EXITING;

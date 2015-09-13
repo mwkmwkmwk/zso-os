@@ -16,3 +16,20 @@ void syscall(int number, int arg1, int arg2, int arg3, int arg4, int arg5) {
 		:
 	);
 }
+
+void user_sys_hello() {
+	syscall(SYS_HELLO, 0, 0, 0, 0, 0);
+}
+
+void user_sys_test(int arg1, int arg2, int arg3, int arg4, int arg5) {
+	syscall(SYS_TEST, arg1, arg2, arg3, arg4, arg5);
+}
+
+void user_sys_sleep(ull ms) {
+	syscall(SYS_SLEEP, (uint)(ms >> 32), (uint)ms, 0, 0, 0);
+}
+
+void __attribute__((noreturn)) user_sys_exit(int exit_code) {
+	syscall(SYS_EXIT, exit_code, 0, 0, 0, 0);
+	while (1) {} // Should never happen
+}

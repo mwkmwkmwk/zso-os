@@ -4,9 +4,11 @@
 #include "io/interrupts.h"
 #include "io/time.h"
 #include "panic.h"
+#include "stdlib/assert.h"
 #include "stdlib/printf.h"
 #include "syscalls/syscall_table.h"
 #include "threading/context.h"
+#include "threading/scheduler.h"
 #include "utils/asm.h"
 
 //
@@ -48,8 +50,14 @@ void sys_test(int arg1, int arg2, int arg3, int arg4, int arg5) {
 	printf("test syscall called with args: %x %x %x %x %x\n", arg1, arg2, arg3, arg4, arg5);
 }
 
-void sys_sleep(ull ms) {
+void sys_sleep(uint ms_hi, uint ms_lo) {
+	ull ms = ((ull)ms_hi << 32) + ms_lo;
+	assert(!"TODO: fix it");
 	bool iflag = enable_interrupts();
 	active_sleep(ms);
 	set_int_flag(iflag);
+}
+
+void sys_exit(int exit_code) {
+	kill_current_thread(exit_code);
 }
