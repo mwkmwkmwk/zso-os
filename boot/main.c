@@ -110,7 +110,7 @@ int kernel_main_thread(void* void_arg) {
 	}
 	while (1) {
 		printf("main work work work: %u\n", (uint)test);
-		sleep(1000);
+		sleep(3000);
 	}
 }
 

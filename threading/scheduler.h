@@ -18,7 +18,7 @@ struct __attribute__((aligned(16))) thread {
 	enum THREAD_STATE state;
 	ull scheduled_on;
 	struct context __attribute__((aligned(16))) context; // valid only if state != RUNNING
-	const char* name;
+	char name[32];
 };
 
 extern struct list thread_list_head;

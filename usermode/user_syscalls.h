@@ -7,13 +7,16 @@
 #include "common.h"
 #include "syscalls/syscall_table.h"
 
-void syscall(int number, int arg1, int arg2, int arg3, int arg4, int arg5);
+ull syscall(int number, int arg1, int arg2, int arg3, int arg4, int arg5);
 
 // Syscalls
 void user_sys_hello();
 void user_sys_test(int arg1, int arg2, int arg3, int arg4, int arg5);
+void user_sys_gettime(double* out_sec);
 void __attribute__((noreturn)) user_sys_exit(int exit_code);
+void user_sys_print(const char* text);
+void user_create_thread(void* start, void* arg, const char* name);
 
 // Some helper functions
-void user_sys_gettime(double* out_sec);
+void user_yield();
 void user_sleep(double sec);

@@ -38,6 +38,7 @@ bool get_int_flag();
 // if (*ptr == cmp_val) *ptr = new_val;
 // return *ptr;
 ull cmp_xchg_8b(volatile ull* ptr, ull cmp_val, ull new_val);
+uint cmp_xchg(volatile uint* ptr, uint cmp_val, uint new_val);
 
 inline ull atomic_read_8b(volatile ull* ptr) {
 	return cmp_xchg_8b(ptr, 0, 0);
@@ -50,6 +51,24 @@ inline ull atomic_add_8b(volatile ull* ptr, ull addend) {
 		val = atomic_read_8b(ptr);
 		ull new_val = val + addend;
 		if (cmp_xchg_8b(ptr, val, new_val) == new_val)
+			break;
+	}
+	return val;
+}
+
+uint atomic_set(volatile uint* ptr, uint val); // Returns old value
+void atomic_add_no_ret(volatile uint* ptr, uint addend);
+
+inline uint atomic_read(volatile uint* ptr) {
+	return cmp_xchg(ptr, 0, 0);
+}
+
+inline uint atomic_add(volatile uint* ptr, uint addend) {
+	uint val;
+	while (1) {
+		val = atomic_read(ptr);
+		uint new_val = val + addend;
+		if (cmp_xchg(ptr, val, new_val) == new_val)
 			break;
 	}
 	return val;

@@ -1,16 +1,14 @@
-#include <stdint.h>
-
 #include "common.h"
 #include "user_syscalls.h"
 
-void __attribute__((noreturn)) user_thread_entry(int (*start_addr)(void*), void* arg) {
-	int exit_code = start_addr(arg);
-	user_sys_exit(exit_code);
+int user_thread(void* arg) {
+	user_sys_print("Hello from user thread!\n");
+	return 0;
 }
 
-
 int user_main(void* arg) {
-	//user_sys_hello();
+	user_create_thread(user_thread, arg, "A useless user thread");
+	user_sys_print("Hello from user!\n");
 	user_sys_test((int)arg, 2, 3, 4, 5);
 	for (int i = 0; i < 10; i++) {
 		user_sys_test(i, 2, 3, 4, 5);
@@ -18,5 +16,3 @@ int user_main(void* arg) {
 	}
 	return 4321;
 }
-
-uint8_t user_stack[4096] = { 0 };

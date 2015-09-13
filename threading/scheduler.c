@@ -13,6 +13,8 @@ struct thread* current_thread;
 extern void __attribute__((noreturn)) user_thread_entry(int (*)(void*), void* );
 extern char user_stack[];
 
+static volatile uint next_user_stack = 0;
+
 static struct thread* select_next_thread() {
 	for (struct list* it = current_thread->list_node.next;
 	     it != &current_thread->list_node;
@@ -94,7 +96,7 @@ void create_kernel_thread(thread_entry* address, void* arg, const char* name) {
 	struct thread* thread = aligned_kalloc(sizeof(struct thread), 16);
 	thread->state = READY;
 	thread->scheduled_on = -1;
-	thread->name = name;
+	strncpy(thread->name, name, 32);
 	thread->context.cs = get_cs();
 	thread->context.ds = get_ds();
 	thread->context.es = get_es();
@@ -121,7 +123,7 @@ void create_user_thread(thread_entry* address, void* arg, const char* name) {
 	struct thread* thread = aligned_kalloc(sizeof(struct thread), 16);
 	thread->state = READY;
 	thread->scheduled_on = -1;
-	thread->name = name;
+	strncpy(thread->name, name, 32);
 
 	thread->context.cs = 0x23;
 	thread->context.ds = 0; // TODO: set something better here
@@ -134,7 +136,8 @@ void create_user_thread(thread_entry* address, void* arg, const char* name) {
 	fxstate_init(&thread->context.fxstate);
 
 	// TODO: add guard pages to detect over/underflows
-	uint* stack = (uint*)((char*)&user_stack + 4096); // TODO: allocate stack dynamically
+	uint current_stack_i = atomic_add(&next_user_stack, 1);
+	uint* stack = (uint*)((char*)&user_stack + 4096 * current_stack_i); // TODO: allocate stack dynamically
 	*(--stack) = (uint)arg;
 	*(--stack) = (uint)address;
 	*(--stack) = 0xDEADBEEF;

@@ -31,3 +31,12 @@ void strrev(char* str) {
 		str[len - i - 1] = tmp;
 	}
 }
+
+char* strncpy(char* dst, const char* src, int dst_size) {
+	int i;
+	for (i = 0; src[i] && i < dst_size - 1; i++) {
+		((char*)dst)[i] = ((char*)src)[i];
+	}
+	dst[i] = 0;
+	return dst;
+}

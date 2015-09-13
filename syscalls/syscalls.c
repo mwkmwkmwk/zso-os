@@ -35,7 +35,9 @@ static void syscall_entry(struct context** context_ptr) {
 	syscall_handler_func_t* handler = syscall_table[context->eax].handler;
 	if (!handler)
 		panic("Invalid syscall number called!");
-	handler(context->ebx, context->ecx, context->edx, context->esi, context->edi);
+	ull res = handler(context->ebx, context->ecx, context->edx, context->esi, context->edi);
+	context->edx = (res >> 32);
+	context->eax = (uint)res;
 }
 
 static void yield_syscall_entry(struct context** context_ptr) {
@@ -47,18 +49,32 @@ void init_syscalls(void) {
 	register_int_handler(INT_YIELD, yield_syscall_entry, false, 3);
 }
 
-void sys_hello() {
+ull sys_hello() {
 	printf("Hello, world\n");
+	return 0;
 }
 
-void sys_test(int arg1, int arg2, int arg3, int arg4, int arg5) {
+ull sys_test(int arg1, int arg2, int arg3, int arg4, int arg5) {
 	printf("test syscall called with args: %x %x %x %x %x\n", arg1, arg2, arg3, arg4, arg5);
+	return 0;
 }
 
-void sys_gettime(double* out_sec) {
+ull sys_gettime(double* out_sec) {
 	*out_sec = get_current_time() / (double)(1ull << 32);
+	return 0;
 }
 
-void sys_exit(int exit_code) {
+ull sys_exit(int exit_code) {
 	kill_current_thread(exit_code);
+	return 0;
+}
+
+ull sys_print(const char* text) {
+	puts(text);
+	return 0;
+}
+
+ull sys_create_thread(void* start, void* arg, const char* name) {
+	create_user_thread(start, arg, name);
+	return 0;
 }

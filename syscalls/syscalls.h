@@ -1,6 +1,8 @@
 #pragma once
 
-typedef void syscall_handler_func_t();
+#include "common.h"
+
+typedef ull syscall_handler_func_t();
 
 struct syscall_handler_t {
 	syscall_handler_func_t* handler;
