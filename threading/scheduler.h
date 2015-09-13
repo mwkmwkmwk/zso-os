@@ -13,11 +13,11 @@ enum THREAD_STATE {
 	EXITING,
 };
 
-struct thread {
+struct __attribute__((aligned(16))) thread {
 	struct list list_node;
 	enum THREAD_STATE state;
 	ull scheduled_on;
-	struct context context; // valid only if state != RUNNING
+	struct context __attribute__((aligned(16))) context; // valid only if state != RUNNING
 	const char* name;
 };
 
@@ -29,4 +29,6 @@ void __attribute__((noreturn)) start_scheduling(void);
 void create_kernel_thread(thread_entry* address, void* arg, const char* name);
 void create_user_thread(thread_entry* address, void* arg, const char* name);
 void __attribute__((noreturn)) kill_current_thread(int exit_code);
+void yield_from_irq(struct context** context_ptr);
+void yield(void);
 void init_scheduler(void);

@@ -93,21 +93,37 @@ void err_page(struct context** context_ptr) {
 	asm volatile("cli; hlt");
 }
 
+int idling_thread(void* arg) {
+	while (1) {
+		asm volatile ("hlt");
+	}
+}
+
 int kernel_main_thread(void* void_arg) {
 	uint arg = (uint)void_arg;
 	printf("Started kernel thread, arg = %x\n", arg);
+	double test = 1.0;
+	double test2 = 1.0;
+	for (int i = 0; i < 1000000; i++) {
+		test *= test2;
+		test2 += 1.0;
+	}
 	while (1) {
-		printf("main work work work\n");
-		active_sleep(1000);
+		printf("main work work work: %u\n", (uint)test);
+		sleep(1000);
 	}
 }
 
 int kernel_worker_thread(void* void_arg) {
 	uint arg = (uint)void_arg;
 	printf("Started kernel thread, arg = %x\n", arg);
+	double test = 0.0;
+	for (int i = 0; i < 1000000; i++) {
+		test += 1.0;
+	}
 	for (int i = 0; i < 10; i++) {
-		printf("work work work\n");
-		active_sleep(2000);
+		printf("work work work: %u\n", (uint)test);
+		sleep(2000);
 	}
 	return 123;
 }
@@ -127,6 +143,7 @@ void main(struct mb_header *mbhdr) {
 	self_test();
 
 	init_scheduler();
+	create_kernel_thread(idling_thread,        (void*)0x12345678, "[idle]");
 	create_kernel_thread(kernel_main_thread,   (void*)0x12345678, "Kernel main");
 	create_kernel_thread(kernel_worker_thread, (void*)0xaaaaaaaa, "Kernel worker");
 	create_user_thread(&user_main, (void*)0xca11ab1e, "User main");

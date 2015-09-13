@@ -61,3 +61,6 @@ ushort get_es();
 ushort get_fs();
 ushort get_gs();
 ushort get_ss();
+
+// TODO: do real initialization, not filling with current state (leaks info to user mode)
+void fxstate_init(char (*state)[512]);

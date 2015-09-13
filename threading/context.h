@@ -3,7 +3,8 @@
 #include "common.h"
 
 // Unfortunately it's redundant with context.inc's
-struct context {
+// Must be aligned to 16B
+struct __attribute__((aligned(16))) context {
 	uint eax;
 	uint ebx;
 	uint ecx;
@@ -20,6 +21,8 @@ struct context {
 	uint eflags;
 	uint esp;
 	uint ss;
+
+	char __attribute__((aligned(16))) fxstate[512];
 };
 
 // Not callable from C

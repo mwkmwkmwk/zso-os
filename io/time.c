@@ -5,6 +5,7 @@
 #include "mem/kalloc.h"
 #include "stdlib/list.h"
 #include "stdlib/printf.h"
+#include "threading/scheduler.h"
 #include "utils/asm.h"
 
 #define TICKS_PER_SEC 1000
@@ -39,10 +40,13 @@ void init_timers(void) {
 	init_pit(TICKS_PER_SEC);
 }
 
-void active_sleep(ull ms) {
-	ull start = current_time;
+// Callable only from non-IRQ context
+void sleep(ull ms) {
+	ull start = get_current_time();
 	ull delta = ms / 1000.0 * (1llu << 32);
-	while (current_time - start < delta) {}
+	while (current_time - start < delta) {
+		yield();
+	}
 }
 
 // Currently no correlation with wall-clock time, just a monotonic timer

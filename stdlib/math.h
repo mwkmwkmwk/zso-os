@@ -15,7 +15,7 @@
 	   _x < 0 ? -_x : _x; })
 
 #define align_up(x, alignment) \
-	((x) + ((x) - (x) % (alignment)) % (alignment))
+	((x) + ((alignment) - (x) % (alignment)) % (alignment))
 
 #define align_down(x, alignment) \
 	((x) - (x) % (alignment))

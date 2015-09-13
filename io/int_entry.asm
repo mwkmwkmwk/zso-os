@@ -22,8 +22,8 @@ extern int_handlers
 
 common_int_entry:
 
-	.saved_context_ptr equ -context_size-4 ; without segment, assuming flat addressing
-	.saved_context     equ -context_size
+	.saved_context_ptr equ -context_size-16-4 ; without segment, assuming flat addressing
+	;.saved_context     equ -context_size ; use only by aligned pointer
 	.saved_ebp         equ +0h
 	.int_num           equ +4h ; Interrupt number pushed by int_entry_X
 	;.err_code          equ +8h ; TODO: Handle this for certain exceptions
@@ -37,9 +37,13 @@ common_int_entry:
 	push ebp
 	mov ebp, esp
 
-	sub esp, context_size + 4
-	mov [ebp + .saved_context_ptr], ebp
-	add dword [ebp + .saved_context_ptr], .saved_context
+	;and esp, ~0xF ; align context to 16B
+	sub esp, -.saved_context_ptr
+	push eax
+	lea eax, [ebp + .saved_context_ptr + 4 + 16]
+	and eax, ~0xf
+	mov [ebp + .saved_context_ptr], eax
+	pop eax
 
 	; save context
 	;(struct context* context, ushort ss, uint esp, ushort cs, uint eip, ushort ds, ushort es, uint ebp, uint eflags
@@ -74,8 +78,7 @@ common_int_entry:
 		push ss
 	.no_priv_change_cont:
 	
-	push ebp
-	add dword [esp], .saved_context
+	push dword [ebp + .saved_context_ptr]
 	call save_context
 	add esp, 9*4
 

@@ -38,8 +38,13 @@ static void syscall_entry(struct context** context_ptr) {
 	handler(context->ebx, context->ecx, context->edx, context->esi, context->edi);
 }
 
+static void yield_syscall_entry(struct context** context_ptr) {
+	yield_from_irq(context_ptr);
+}
+
 void init_syscalls(void) {
 	register_int_handler(INT_SYSCALL, syscall_entry, false, 3);
+	register_int_handler(INT_YIELD, yield_syscall_entry, false, 3);
 }
 
 void sys_hello() {
@@ -50,12 +55,8 @@ void sys_test(int arg1, int arg2, int arg3, int arg4, int arg5) {
 	printf("test syscall called with args: %x %x %x %x %x\n", arg1, arg2, arg3, arg4, arg5);
 }
 
-void sys_sleep(uint ms_hi, uint ms_lo) {
-	ull ms = ((ull)ms_hi << 32) + ms_lo;
-	assert(!"TODO: fix it");
-	bool iflag = enable_interrupts();
-	active_sleep(ms);
-	set_int_flag(iflag);
+void sys_gettime(double* out_sec) {
+	*out_sec = get_current_time() / (double)(1ull << 32);
 }
 
 void sys_exit(int exit_code) {

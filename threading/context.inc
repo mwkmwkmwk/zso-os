@@ -24,6 +24,9 @@ struc context
 	.esp: resd 1 ; must be together with ss, for use of lss
 	.ss:  resd 1
 
+	alignb 16
+	.fxstate: resb 512 ; state from fxsave
+
 endstruc
 
 %ifndef CONTEXT_SOURCE

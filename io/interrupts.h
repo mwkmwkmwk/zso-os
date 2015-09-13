@@ -31,6 +31,7 @@
 
 // User interrupts
 #define INT_SYSCALL		0x20
+#define INT_YIELD		0x21 // It doesn't go through standard syscall interface, so we'd better use another syscall number
 
 // PIC interrupts
 

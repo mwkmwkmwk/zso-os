@@ -1,5 +1,6 @@
 #include "scheduler.h"
 
+#include "io/interrupts.h"
 #include "io/time.h"
 #include "mem/kalloc.h"
 #include "stdlib/assert.h"
@@ -40,16 +41,29 @@ void sched_tick(struct context** context_ptr) {
 		|| current_thread->state == EXITING)
 	{
 		// Switch to a next thread from the list
-		if (current_thread->state == EXITING){
-			list_unlink(&current_thread->list_node);
-			kfree(current_thread);
-		} else {
-			memcpy(&current_thread->context, *context_ptr, sizeof(struct context));
-		}
-		struct thread* next_thread = select_next_thread();
-		set_current_thread(next_thread);
-		*context_ptr = &next_thread->context;
+		yield_from_irq(context_ptr);
 	}
+}
+
+void yield_from_irq(struct context** context_ptr) {
+	if (current_thread->state == EXITING){
+		list_unlink(&current_thread->list_node);
+		kfree(current_thread);
+	} else {
+		memcpy(&current_thread->context, *context_ptr, sizeof(struct context));
+	}
+	struct thread* next_thread = select_next_thread();
+	set_current_thread(next_thread);
+	*context_ptr = &next_thread->context;
+}
+
+// Callable only from non-IRQ context
+void yield(void) {
+	asm volatile (
+		"int %0"
+		:
+		: "i"(INT_YIELD)
+	);
 }
 
 void __attribute__((noreturn)) start_scheduling(void) {
@@ -77,7 +91,7 @@ void __attribute__((noreturn)) kill_current_thread(int exit_code) {
 }
 
 void create_kernel_thread(thread_entry* address, void* arg, const char* name) {
-	struct thread* thread = kalloc(sizeof(struct thread));
+	struct thread* thread = aligned_kalloc(sizeof(struct thread), 16);
 	thread->state = READY;
 	thread->scheduled_on = -1;
 	thread->name = name;
@@ -89,6 +103,7 @@ void create_kernel_thread(thread_entry* address, void* arg, const char* name) {
 	thread->context.ss = get_ss();
 	thread->context.eflags = EFLAGS_IF | 2;
 	thread->context.eip = (uint)kernel_thread_entry;
+	fxstate_init(&thread->context.fxstate);
 
 	// TODO: add guard pages to detect over/underflows
 	uint* stack = (uint*)((char*)kalloc(THREAD_STACK_SIZE) + THREAD_STACK_SIZE);
@@ -103,7 +118,7 @@ void create_kernel_thread(thread_entry* address, void* arg, const char* name) {
 }
 
 void create_user_thread(thread_entry* address, void* arg, const char* name) {
-	struct thread* thread = kalloc(sizeof(struct thread));
+	struct thread* thread = aligned_kalloc(sizeof(struct thread), 16);
 	thread->state = READY;
 	thread->scheduled_on = -1;
 	thread->name = name;
@@ -116,6 +131,7 @@ void create_user_thread(thread_entry* address, void* arg, const char* name) {
 	thread->context.ss = 0x2b;
 	thread->context.eflags = EFLAGS_IF | 2;
 	thread->context.eip = (uint)&user_thread_entry;
+	fxstate_init(&thread->context.fxstate);
 
 	// TODO: add guard pages to detect over/underflows
 	uint* stack = (uint*)((char*)&user_stack + 4096); // TODO: allocate stack dynamically

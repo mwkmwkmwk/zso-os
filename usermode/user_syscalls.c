@@ -13,7 +13,7 @@ void syscall(int number, int arg1, int arg2, int arg3, int arg4, int arg5) {
 		"int %0 \n"
 		:
 		: "i"(INT_SYSCALL), "m"(number), "m"(arg1), "m"(arg2), "m"(arg3), "m"(arg4), "m"(arg5)
-		:
+		: "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"
 	);
 }
 
@@ -25,8 +25,27 @@ void user_sys_test(int arg1, int arg2, int arg3, int arg4, int arg5) {
 	syscall(SYS_TEST, arg1, arg2, arg3, arg4, arg5);
 }
 
-void user_sys_sleep(ull ms) {
-	syscall(SYS_SLEEP, (uint)(ms >> 32), (uint)ms, 0, 0, 0);
+void user_sys_gettime(double* out_sec) {
+	syscall(SYS_GETTIME, (uint)out_sec, 0, 0, 0, 0);
+}
+
+void user_yield() {
+	asm volatile (
+		"int %0"
+		:
+		: "i"(INT_YIELD)
+	);
+}
+
+void user_sleep(double sec) {
+	double start_time, current;
+	user_sys_gettime(&start_time);
+	while (1) {
+		user_sys_gettime(&current);
+		if (current - start_time >= sec)
+			break;
+		user_yield();
+	}
 }
 
 void __attribute__((noreturn)) user_sys_exit(int exit_code) {

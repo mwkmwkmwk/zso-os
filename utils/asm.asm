@@ -98,3 +98,8 @@ global get_ss
 get_ss:
 	get ss
 
+global fxstate_init
+fxstate_init:
+	mov eax, [esp + 4]
+	fxsave [eax]
+	retn

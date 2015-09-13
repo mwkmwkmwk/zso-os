@@ -6,6 +6,6 @@
 typedef void timer_callback_t(struct context**);
 
 void init_timers(void);
-void active_sleep(ull ms);
+void sleep(ull ms);
 ull get_current_time(void);
 void add_tick_callback(timer_callback_t* f);

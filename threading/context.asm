@@ -27,6 +27,7 @@ save_context:
 	pop dword [eax + context.ebp]
 	pop dword [eax + context.eflags]
 
+	fxsave [eax + context.fxstate]
 	xor edx, edx
 	mov dx, fs
 	mov [eax + context.fs], edx
@@ -40,6 +41,7 @@ save_context:
 global load_context
 load_context:
 	mov ebp, [esp + 4] ; ebp = &context
+	fxrstor [ebp + context.fxstate]
 
 	; Check if privileges have changed
 	mov ax, cs
