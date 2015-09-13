@@ -16,7 +16,7 @@
 #define EFLAGS_IF (1 << 9)
 #define EFLAGS_DF (1 << 10)
 #define EFLAGS_OF (1 << 11)
-// IO priv level (2 bits)
+#define EFLAGS_IO_PRIV(lvl) ((lvl) << 12)
 #define EFLAGS_NT (1 << 14)
 // reserved (0)
 #define EFLAGS_RF (1 << 16)

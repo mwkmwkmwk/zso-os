@@ -45,7 +45,7 @@ void sys_hello() {
 }
 
 void sys_test(int arg1, int arg2, int arg3, int arg4, int arg5) {
-	printf("test syscall called with args: %u %u %u %u %u\n", arg1, arg2, arg3, arg4, arg5);
+	printf("test syscall called with args: %x %x %x %x %x\n", arg1, arg2, arg3, arg4, arg5);
 }
 
 void sys_sleep(ull ms) {

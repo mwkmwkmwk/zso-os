@@ -9,6 +9,8 @@
 
 struct list thread_list_head;
 struct thread* current_thread;
+extern void __attribute__((noreturn)) user_thread_entry(int (*)(void*), void* );
+extern char user_stack[];
 
 static struct thread* select_next_thread() {
 	for (struct list* it = current_thread->list_node.next;
@@ -86,6 +88,33 @@ void create_kernel_thread(thread_entry* address, void* arg, const char* name) {
 
 	// TODO: add guard pages to detect over/underflows
 	uint* stack = (uint*)((char*)kalloc(THREAD_STACK_SIZE) + THREAD_STACK_SIZE);
+	*(--stack) = (uint)arg;
+	*(--stack) = (uint)address;
+	*(--stack) = 0xDEADBEEF;
+	thread->context.esp = (uint)stack;
+
+	bool iflag = disable_interrupts();
+	list_insert_before(&thread_list_head, &thread->list_node);
+	set_int_flag(iflag);
+}
+
+void create_user_thread(thread_entry* address, void* arg, const char* name) {
+	struct thread* thread = kalloc(sizeof(struct thread));
+	thread->state = READY;
+	thread->scheduled_on = -1;
+	thread->name = name;
+
+	thread->context.cs = 0x23;
+	thread->context.ds = 0; // TODO: set something better here
+	thread->context.es = 0;
+	thread->context.fs = 0;
+	thread->context.gs = 0;
+	thread->context.ss = 0x2b;
+	thread->context.eflags = EFLAGS_IF | 2;
+	thread->context.eip = (uint)&user_thread_entry;
+
+	// TODO: add guard pages to detect over/underflows
+	uint* stack = (uint*)((char*)&user_stack + 4096); // TODO: allocate stack dynamically
 	*(--stack) = (uint)arg;
 	*(--stack) = (uint)address;
 	*(--stack) = 0xDEADBEEF;

@@ -27,4 +27,5 @@ typedef int thread_entry(void*);
 
 void __attribute__((noreturn)) start_scheduling(void);
 void create_kernel_thread(thread_entry* address, void* arg, const char* name);
+void create_user_thread(thread_entry* address, void* arg, const char* name);
 void init_scheduler(void);

@@ -21,6 +21,8 @@
 #include "threading/scheduler.h"
 #include "utils/asm.h"
 
+extern thread_entry user_main;
+
 void self_test(void) {
 	asm volatile(
 		"movl $0, %eax \n"
@@ -58,7 +60,9 @@ void self_test(void) {
 	char* ptr = kalloc(10);
 	memset(ptr, 1, 10);
 	kfree(ptr);
+	printf("--------------------------------------\n");
 	printf("Self test passed!\n");
+	printf("--------------------------------------\n");
 }
 
 _Noreturn void panic(const char *arg) {
@@ -125,10 +129,11 @@ void main(struct mb_header *mbhdr) {
 	init_scheduler();
 	create_kernel_thread(kernel_main_thread,   (void*)0x12345678, "Kernel main");
 	create_kernel_thread(kernel_worker_thread, (void*)0xaaaaaaaa, "Kernel worker");
+	create_user_thread(&user_main, (void*)0xca11ab1e, "User main");
 	start_scheduling();
 
 
-	panic("Error: This code should have never get reached!");
+	//panic("Error: This code should have never get reached!");
 
 	// Jump to usermode
 	asm volatile(
