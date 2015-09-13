@@ -2,7 +2,7 @@
 CFLAGS = -ffreestanding -m32 -nostdlib -std=gnu99 -fomit-frame-pointer -O1 \
          -g -I . -Wall #-D_DEBUG
 USERMODE_CFLAGS = -D USERMODE $(CFLAGS)
-MODULES = boot io mem stdlib syscalls usermode video utils
+MODULES = boot io mem stdlib syscalls usermode video utils threading
 
 .PHONY: clean
 

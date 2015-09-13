@@ -1,5 +1,7 @@
 [bits 32]
 
+%include "threading/context.inc"
+
 section .text
 
 extern int_handlers
@@ -19,46 +21,79 @@ extern int_handlers
 %undef i
 
 common_int_entry:
+
+	.saved_context_ptr equ -context_size-4 ; without segment, assuming flat addressing
+	.saved_context     equ -context_size
+	.saved_ebp         equ +0h
+	.int_num           equ +4h ; Interrupt number pushed by int_entry_X
+	;.err_code          equ +8h ; TODO: Handle this for certain exceptions
+	.saved_eip         equ +8h
+	.saved_cs          equ +0ch
+	.saved_eflags      equ +10h
+	.saved_esp         equ +14h ; Valid only on priv changing interrupt
+	.saved_ss          equ +18h
+
+	cli
 	push ebp
 	mov ebp, esp
 
-	push eax
-	push ecx
-	push edx
-	
+	sub esp, context_size + 4
+	mov [ebp + .saved_context_ptr], ebp
+	add dword [ebp + .saved_context_ptr], .saved_context
+
+	; save context
+	;(struct context* context, ushort ss, uint esp, ushort cs, uint eip, ushort ds, ushort es, uint ebp, uint eflags
+	push dword [ebp + .saved_eflags]
+	push dword [ebp + .saved_ebp]
 	; set segments (we could get called from usermode)
-	push ds
 	push es
-	mov eax, 0x10
-	mov ds, ax
-	mov es, ax
+	push ds
 	
-	; TODO: align stack to 16B before the call
-
-	; Arguments
-	push edi
-	push esi
-	push edx
-	push ecx
-	push ebx
-	push dword[ebp - 4] ; pushed eax
-
-	mov eax, [ebp + 4] ; Interrupt number pushed by int_entry_X
-	call dword [int_handlers + eax*4] ; call C handler
-
-	add esp, 6*4
-	
-	; return
-	pop es
+	push dword 0x10
 	pop ds
-	pop edx
-	pop ecx
-	pop eax
+	push dword 0x10
+	pop es
+	
+	push dword [ebp + .saved_eip]
+	push dword [ebp + .saved_cs]
 
-	mov esp, ebp
-	pop ebp
-	add esp, 4 ; pop interrupt number
-	iret
+	; Check if priviledges have changed
+	push eax
+	mov ax, cs
+	xor eax, [ebp + .saved_cs]
+	and eax, 0b11
+	cmp ax, 0 ; Assuming that we only use ring0 and ring3
+	pop eax
+	jz .no_priv_change
+		push dword [ebp + .saved_esp]
+		push dword [ebp + .saved_ss]
+		jmp .no_priv_change_cont
+	.no_priv_change:
+		push ebp
+		add dword [esp], .saved_eflags + 4 ; esp before the interrupt
+		push ss
+	.no_priv_change_cont:
+	
+	push ebp
+	add dword [esp], .saved_context
+	call save_context
+	add esp, 9*4
+
+	; arguments
+	lea eax, [ebp + .saved_context_ptr]
+	push eax
+
+	; call C handler
+	mov eax, [ebp + .int_num]
+	call dword [int_handlers + eax*4] ; TODO: align stack here
+	add esp, 4
+
+	; return
+	push dword [ebp + .saved_context_ptr]
+	call load_context
+	; should never happen
+	cli
+	hlt
 
 section .rodata
 

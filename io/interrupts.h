@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include "io/pic.h"
+#include "threading/context.h"
 
 // CPU interrupts (descr. from Intel manuals)
 #define INT_DIV_ERROR	0 // Divide Error DIV and IDIV instructions.
@@ -50,11 +51,10 @@
 #define INT_ATA1		PIC_TO_CPU(14)
 #define INT_ATA2		PIC_TO_CPU(15)
 
-// Receives following arguments: eax, ebx, ecx, edx, esi, edi
-typedef void (*int_handler_t)();
+typedef void (*int_handler_t)(struct context**);
 
 // Registered interrupt handlers
 extern int_handler_t int_handlers[256];
 
 void register_int_handler(int int_num, int_handler_t handler, bool block, 
-                           int priv_level);
+                          int priv_level);

@@ -5,8 +5,8 @@
 int user_main() {
 	syscall(SYS_TEST, 1, 2, 3, 4, 5);
 	while (1) {
-		syscall(SYS_HELLO, 0, 0, 0, 0, 0);
-		syscall(SYS_SLEEP, 1000, 0, 0, 0, 0);
+		//syscall(SYS_HELLO, 0, 0, 0, 0, 0);
+		//syscall(SYS_SLEEP, 1000, 0, 0, 0, 0);
 	}
 }
 

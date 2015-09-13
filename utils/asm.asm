@@ -38,3 +38,32 @@ get_int_flag:
 	pop eax
 	and eax, 200h
 	retn
+
+global cmp_xchg_8b
+cmp_xchg_8b:
+	push ebp
+	mov ebp, esp
+	push ebx
+	push ecx
+	push esi
+
+	mov eax, [ebp + 0ch]
+	mov edx, [ebp + 10h]
+	mov ebx, [ebp + 14h]
+	mov ecx, [ebp + 18h]
+
+	mov esi, [ebp + 8]
+	cmpxchg8b [esi]
+
+	jnz not_changed
+		; ZF = 1
+		mov eax, ebx
+		mov edx, ecx
+	not_changed:
+
+	pop esi
+	pop ecx
+	pop ebx
+	mov esp, ebp
+	pop ebp
+	retn

@@ -11,6 +11,7 @@
 #include "panic.h"
 #include "stdlib/printf.h"
 #include "stdlib/string.h"
+#include "threading/context.h"
 
 // Currently assuming that the keyboard uses scan code set 1
 
@@ -184,7 +185,7 @@ static void reset_scan_state(void) {
 	current_state = &us_qwerty_set1;
 }
 
-static void irq1(void) {
+static void irq1(struct context** context_ptr) {
 	uint8_t code = inb(0x60);
 	
 	// Doesn't work as it should. Let's skip it.

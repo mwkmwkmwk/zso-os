@@ -6,6 +6,7 @@
 #include "panic.h"
 #include "stdlib/printf.h"
 #include "syscalls/syscall_table.h"
+#include "threading/context.h"
 #include "utils/asm.h"
 
 //
@@ -25,13 +26,14 @@ struct syscall_handler_t syscall_table[] = {
 	#undef SYSCALL_TABLE_ARRAY_EXPAND
 };
 
-static void syscall_entry(int eax, int ebx, int ecx, int edx, int esi, int edi) {
-	if (eax < 0 || eax >= _countof(syscall_table))
+static void syscall_entry(struct context** context_ptr) {
+	struct context* context = *context_ptr;
+	if (context->eax < 0 || context->eax >= _countof(syscall_table))
 		panic("Invalid syscall number called!");
-	syscall_handler_func_t* handler = syscall_table[eax].handler;
+	syscall_handler_func_t* handler = syscall_table[context->eax].handler;
 	if (!handler)
 		panic("Invalid syscall number called!");
-	handler(ebx, ecx, edx, esi, edi);
+	handler(context->ebx, context->ecx, context->edx, context->esi, context->edi);
 }
 
 void init_syscalls(void) {

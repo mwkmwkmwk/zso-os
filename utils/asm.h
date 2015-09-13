@@ -33,3 +33,24 @@ bool disable_interrupts();
 
 void set_int_flag(bool val);
 bool get_int_flag();
+
+// Atomic equivalent of:
+// if (*ptr == cmp_val) *ptr = new_val;
+// return *ptr;
+ull cmp_xchg_8b(volatile ull* ptr, ull cmp_val, ull new_val);
+
+inline ull atomic_read_8b(volatile ull* ptr) {
+	return cmp_xchg_8b(ptr, 0, 0);
+}
+
+// Returns previous value
+inline ull atomic_add_8b(volatile ull* ptr, ull addend) {
+	ull val;
+	while (1) {
+		val = atomic_read_8b(ptr);
+		ull new_val = val + addend;
+		if (cmp_xchg_8b(ptr, val, new_val) == new_val)
+			break;
+	}
+	return val;
+}
