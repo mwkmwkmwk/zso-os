@@ -44,7 +44,7 @@ void init_timers(void) {
 void sleep(ull ms) {
 	ull start = get_current_time();
 	ull delta = ms / 1000.0 * (1llu << 32);
-	while (current_time - start < delta) {
+	while (get_current_time() - start < delta) {
 		yield();
 	}
 }

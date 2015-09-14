@@ -1,6 +1,7 @@
 #include "scheduler.h"
 
 #include "io/interrupts.h"
+#include "io/keyboard.h"
 #include "io/time.h"
 #include "mem/kalloc.h"
 #include "stdlib/assert.h"
@@ -30,11 +31,21 @@ static struct thread* select_next_thread() {
 
 void set_current_thread(struct thread* thread) {
 	// Beware: `thread` can be equal to `current_thread`
-	current_thread->state = READY;
-	current_thread->scheduled_on = -1;
+	bool iflag = disable_interrupts();
+	if (current_thread->state == EXITING){
+		// Delete current_thread struct
+		list_unlink(&current_thread->list_node);
+		if (get_active_key_buffer() == &current_thread->keyboard_buffer)
+			set_active_key_buffer(NULL);
+		kfree(current_thread);
+	} else {
+		current_thread->state = READY;
+		current_thread->scheduled_on = -1;
+	}
 	thread->scheduled_on = get_current_time();
 	thread->state = RUNNING;
 	current_thread = thread;
+	set_int_flag(iflag);
 }
 
 void sched_tick(struct context** context_ptr) {
@@ -48,10 +59,7 @@ void sched_tick(struct context** context_ptr) {
 }
 
 void yield_from_irq(struct context** context_ptr) {
-	if (current_thread->state == EXITING){
-		list_unlink(&current_thread->list_node);
-		kfree(current_thread);
-	} else {
+	if (current_thread->state != EXITING){
 		memcpy(&current_thread->context, *context_ptr, sizeof(struct context));
 	}
 	struct thread* next_thread = select_next_thread();
@@ -89,7 +97,8 @@ void __attribute__((noreturn)) kill_current_thread(int exit_code) {
 	bool iflag = disable_interrupts();
 	current_thread->state = EXITING;
 	set_int_flag(iflag);
-	while (1) {} // Current thread will disappear on next timer tick
+	yield();
+	assert(!"Reached unreachable code!");
 }
 
 void create_kernel_thread(thread_entry* address, void* arg, const char* name) {
@@ -106,6 +115,7 @@ void create_kernel_thread(thread_entry* address, void* arg, const char* name) {
 	thread->context.eflags = EFLAGS_IF | 2;
 	thread->context.eip = (uint)kernel_thread_entry;
 	fxstate_init(&thread->context.fxstate);
+	init_keyboard_buffer(&thread->keyboard_buffer);
 
 	// TODO: add guard pages to detect over/underflows
 	uint* stack = (uint*)((char*)kalloc(THREAD_STACK_SIZE) + THREAD_STACK_SIZE);
@@ -134,6 +144,7 @@ void create_user_thread(thread_entry* address, void* arg, const char* name) {
 	thread->context.eflags = EFLAGS_IF | 2;
 	thread->context.eip = (uint)&user_thread_entry;
 	fxstate_init(&thread->context.fxstate);
+	init_keyboard_buffer(&thread->keyboard_buffer);
 
 	// TODO: add guard pages to detect over/underflows
 	uint current_stack_i = atomic_add(&next_user_stack, 1);
@@ -150,4 +161,5 @@ void create_user_thread(thread_entry* address, void* arg, const char* name) {
 
 void init_scheduler(void) {
 	list_init(&thread_list_head);
+	set_active_key_buffer(NULL);
 }

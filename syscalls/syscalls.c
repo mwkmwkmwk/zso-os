@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "io/interrupts.h"
+#include "io/keyboard.h"
 #include "io/time.h"
 #include "panic.h"
 #include "stdlib/assert.h"
@@ -19,8 +20,7 @@
 // 		eax: syscall number
 // 		ebx, ecx, edx, esi, edi: syscall arguments
 // return value:
-//		currently the only way to return something is to pass a pointer
-// 		to a result in one of the arguments
+//		edx:eax (64 bit)
 
 struct syscall_handler_t syscall_table[] = {
 	#define SYSCALL_TABLE_ARRAY_EXPAND
@@ -66,7 +66,7 @@ ull sys_gettime(double* out_sec) {
 
 ull sys_exit(int exit_code) {
 	kill_current_thread(exit_code);
-	return 0;
+	assert(!"Reached unreachable code!");
 }
 
 ull sys_print(const char* text) {
@@ -77,4 +77,13 @@ ull sys_print(const char* text) {
 ull sys_create_thread(void* start, void* arg, const char* name) {
 	create_user_thread(start, arg, name);
 	return 0;
+}
+
+ull sys_get_keyboard_focus(void) {
+	set_active_key_buffer(&current_thread->keyboard_buffer);
+	return 0;
+}
+
+ull sys_get_key(struct keyboard_event* out_event) {
+	return pull_key_event(&current_thread->keyboard_buffer, out_event);
 }

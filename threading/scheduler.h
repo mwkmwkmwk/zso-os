@@ -1,5 +1,6 @@
 #pragma once
 
+#include "io/keyboard.h"
 #include "stdlib/list.h"
 #include "threading/context.h"
 
@@ -19,8 +20,10 @@ struct __attribute__((aligned(16))) thread {
 	ull scheduled_on;
 	struct context __attribute__((aligned(16))) context; // valid only if state != RUNNING
 	char name[32];
+	struct keyboard_buffer keyboard_buffer;
 };
 
+extern struct thread* current_thread;
 extern struct list thread_list_head;
 
 typedef int thread_entry(void*);

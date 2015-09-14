@@ -40,6 +40,11 @@ void self_test(void) {
 	assert(atomic_add_8b(&var, 3) == 123);
 	assert(var == 126);
 	assert(atomic_read_8b(&var) == 126);
+	uint intvar = 123;
+	assert(atomic_read(&intvar) == 123);
+	assert(atomic_add(&intvar, 3) == 123);
+	assert(intvar == 126);
+	assert(atomic_read(&intvar) == 126);
 
 	// printf("Sleeping for 1s... ");
 	// active_sleep(1000);

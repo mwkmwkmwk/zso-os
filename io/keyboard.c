@@ -12,117 +12,12 @@
 #include "stdlib/printf.h"
 #include "stdlib/string.h"
 #include "threading/context.h"
+#include "utils/asm.h"
 
 // Currently assuming that the keyboard uses scan code set 1
 
-enum KEY_CODE {
-	KEY_ESCAPE,
-	KEY_1,
-	KEY_2,
-	KEY_3,
-	KEY_4,
-	KEY_5,
-	KEY_6,
-	KEY_7,
-	KEY_8,
-	KEY_9,
-	KEY_0,
-	KEY_MINUS,
-	KEY_EQUAL,
-	KEY_BACKSPACE,
-	KEY_TAB,
-	KEY_Q,
-	KEY_W,
-	KEY_E,
-	KEY_R,
-	KEY_T,
-	KEY_Y,
-	KEY_U,
-	KEY_I,
-	KEY_O,
-	KEY_P,
-	KEY_LBRACKET,
-	KEY_RBRACKET,
-	KEY_ENTER,
-	KEY_LEFTCONTROL,
-	KEY_A,
-	KEY_S,
-	KEY_D,
-	KEY_F,
-	KEY_G,
-	KEY_H,
-	KEY_J,
-	KEY_K,
-	KEY_L,
-	KEY_SEMICOLON,
-	KEY_SINGLEQUOTE,
-	KEY_BACKTICK,
-	KEY_LSHIFT,
-	KEY_BACKSLASH,
-	KEY_Z,
-	KEY_X,
-	KEY_C,
-	KEY_V,
-	KEY_B,
-	KEY_N,
-	KEY_M,
-	KEY_COMMA,
-	KEY_DOT,
-	KEY_SLASH,
-	KEY_RSHIFT,
-	KEY_NUM_STAR,
-	KEY_LEFTALT,
-	KEY_SPACE,
-	KEY_CAPSLOCK,
-	KEY_F1,
-	KEY_F2,
-	KEY_F3,
-	KEY_F4,
-	KEY_F5,
-	KEY_F6,
-	KEY_F7,
-	KEY_F8,
-	KEY_F9,
-	KEY_F10,
-	KEY_NUMBERLOCK,
-	KEY_SCROLLLOCK,
-	KEY_NUM_7,
-	KEY_NUM_8,
-	KEY_NUM_9,
-	KEY_NUM_MINUS,
-	KEY_NUM_4,
-	KEY_NUM_5,
-	KEY_NUM_6,
-	KEY_NUM_PLUS,
-	KEY_NUM_1,
-	KEY_NUM_2,
-	KEY_NUM_3,
-	KEY_NUM_0,
-	KEY_NUM_DOT,
-	KEY_F11,
-	KEY_F12,
-	KEY_NUM_ENTER,
-	KEY_RIGHTCONTROL,
-	KEY_NUM_SLASH,
-	KEY_RIGHTALT,
-	KEY_HOME,
-	KEY_CURSORUP,
-	KEY_PAGEUP,
-	KEY_CURSORLEFT,
-	KEY_CURSORRIGHT,
-	KEY_END,
-	KEY_CURSORDOWN,
-	KEY_PAGEDOWN,
-	KEY_INSERT,
-	KEY_DELETE,
-	KEY_LEFTGUI,
-	KEY_RIGHTGUI,
-	KEY_APPS,
-	KEY_PRINTSCREEN,
-	KEY_PAUSE,
-};
-
 bool caps_state;
+static volatile struct keyboard_buffer* active_buffer;
 
 // OEM scan code to KEY_CODE translation tree
 // TODO: current version wastes a lot of memory, add alternative way to store ptrs for some nodes: list of <key, val>
@@ -144,6 +39,9 @@ struct key_to_ascii {
 	char normal;
 	char shifted;
 };
+
+bool put_event(struct keyboard_buffer* buffer, enum KEY_CODE key_code, char ascii,
+               bool pressed, bool released);
 
 // null-byte cannot be a correct scan code, so we can pass the code as a c-string
 void scantree_insert(struct scantree_node* node, const char* scan_code,
@@ -231,12 +129,19 @@ static void irq1(struct context** context_ptr) {
 
 		// Currently weird capslock semantic on non-alpha keys. TODO: fix it
 		bool shifted = (key_state[KEY_LSHIFT] || key_state[KEY_RSHIFT]) ^ caps_state;
+		char ascii = 0;
 
 		if (pressed) {
-			if (!shifted && current_layout[code].normal != 0)
-				printf("%c", current_layout[code].normal);
-			if (shifted && current_layout[code].shifted != 0)
-				printf("%c", current_layout[code].shifted);
+			if (!shifted)
+				ascii = current_layout[code].normal;
+			if (shifted)
+				ascii = current_layout[code].shifted;
+		}
+
+		if (!put_event(get_active_key_buffer(),
+		               code, ascii, pressed, released))
+		{
+			printf("Keyboard buffer is full or no one has keyboard focus\n");
 		}
 		reset_scan_state();
 	}
@@ -252,6 +157,55 @@ void init_keyboard(void) {
 	caps_state = false;
 	current_layout = us_qwerty_set1_ascii;
 	enable_pic_interrupt(INT_KEYBOARD);
+}
+
+void init_keyboard_buffer(struct keyboard_buffer* buffer) {
+	bool iflag = disable_interrupts();
+	buffer->start = buffer->end = 0;
+	set_int_flag(iflag);
+}
+
+struct keyboard_buffer* get_active_key_buffer(void) {
+	return (struct keyboard_buffer*)atomic_read((uint*)&active_buffer);
+}
+
+void set_active_key_buffer(struct keyboard_buffer* buffer) {
+	atomic_set((uint*)&active_buffer, (uint)buffer);
+}
+
+bool put_event(struct keyboard_buffer* buffer, enum KEY_CODE key_code, char ascii,
+               bool pressed, bool released)
+{
+	if (!buffer)
+		return false;
+	bool res = false;
+	bool iflag = disable_interrupts();
+	int new_end = (buffer->end + 1) % _countof(buffer->buffer);
+	if (new_end != buffer->start) {
+		// TODO: emit 2 separate events if pressed && released (don't confuse user with [pause] weirdness)
+		buffer->buffer[buffer->end].key_code = key_code;
+		buffer->buffer[buffer->end].ascii    = ascii;
+		buffer->buffer[buffer->end].pressed  = pressed;
+		buffer->buffer[buffer->end].released = released;
+		buffer->end = new_end;
+		res = true;
+	}
+	set_int_flag(iflag);
+	return res;
+}
+
+bool pull_key_event(struct keyboard_buffer* buffer, struct keyboard_event* out) {
+	if (!buffer)
+		return false;
+	bool res = false;
+	bool iflag = disable_interrupts();
+	if (buffer->start != buffer->end) {
+		*out = buffer->buffer[buffer->start];
+		buffer->start = (buffer->start + 1) % _countof(buffer->buffer);
+		res = true;
+	}
+	set_int_flag(iflag);
+	return res;
 }
 
 static void init_us_qwerty_set1(void) {

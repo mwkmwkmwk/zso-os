@@ -52,8 +52,16 @@ void user_sys_print(const char* text) {
 	syscall(SYS_PRINT, (int)text, 0, 0, 0, 0);
 }
 
-void user_create_thread(void* start, void* arg, const char* name) {
+void user_sys_create_thread(void* start, void* arg, const char* name) {
 	syscall(SYS_CREATE_THREAD, (int)start, (int)arg, (int)name, 0, 0);
+}
+
+void user_sys_get_keyboard_focus(void) {
+	syscall(SYS_GET_KEYBOARD_FOCUS, 0, 0, 0, 0, 0);
+}
+
+bool user_sys_get_key(struct keyboard_event* out_event) {
+	return syscall(SYS_GET_KEY, (int)out_event, 0, 0, 0, 0);
 }
 
 // Helper functions
