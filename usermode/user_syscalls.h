@@ -23,3 +23,8 @@ bool user_sys_get_key(struct keyboard_event* out_event);
 // Some helper functions
 void user_yield();
 void user_sleep(double sec);
+void user_read_line(char* buf, int buf_size);
+
+int user_strncmp(const char* str1, const char* str2, size_t max_len);
+void user_strrev(char* str);
+size_t user_strlen(const char* str);

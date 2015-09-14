@@ -46,6 +46,11 @@ void self_test(void) {
 	assert(intvar == 126);
 	assert(atomic_read(&intvar) == 126);
 
+	assert(strcmp("123", "123") == 0);
+	assert(strcmp("123", "223") == -1);
+	assert(strcmp("223", "023") == 1);
+	assert(strncmp("1234", "123", 3) == 0);
+	assert(strncmp("1234", "123", 4) == 1);
 	// printf("Sleeping for 1s... ");
 	// active_sleep(1000);
 	// printf("Done!\n");
@@ -109,12 +114,13 @@ int kernel_main_thread(void* void_arg) {
 	printf("Started kernel thread, arg = %x\n", arg);
 	double test = 1.0;
 	double test2 = 1.0;
-	for (int i = 0; i < 1000000; i++) {
+	for (int i = 0; i < 100000; i++) {
 		test *= test2;
 		test2 += 1.0;
 	}
+	//printf("main work work work: %u\n", (uint)test);
 	while (1) {
-		printf("main work work work: %u\n", (uint)test);
+		// Do something here
 		sleep(3000);
 	}
 }
@@ -123,12 +129,14 @@ int kernel_worker_thread(void* void_arg) {
 	uint arg = (uint)void_arg;
 	printf("Started kernel thread, arg = %x\n", arg);
 	double test = 0.0;
-	for (int i = 0; i < 1000000; i++) {
+	for (int i = 0; i < 100000; i++) {
 		test += 1.0;
 	}
-	for (int i = 0; i < 10; i++) {
-		printf("work work work: %u\n", (uint)test);
-		sleep(2000);
+	//printf("work work work: %u\n", (uint)test);
+	//for (int i = 0; i < 10; i++) {
+	while (1) {
+		// Do something here
+		sleep(500);
 	}
 	return 123;
 }

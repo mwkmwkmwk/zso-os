@@ -40,3 +40,22 @@ char* strncpy(char* dst, const char* src, int dst_size) {
 	dst[i] = 0;
 	return dst;
 }
+
+int strcmp(const char* str1, const char* str2) {
+	return strncmp(str1, str2, (size_t)-1);
+}
+
+int strncmp(const char* str1, const char* str2, size_t max_len) {
+	int i = 0;
+	for (; i < max_len; i++) {
+		if (!*str1 || *str1 != *str2)
+			break;
+		str1++;
+		str2++;
+	}
+	if (i == max_len) {
+		str1--;
+		str2--;
+	}
+	return *str1 == *str2 ? 0 : (*str1 < *str2 ? -1 : 1);
+}

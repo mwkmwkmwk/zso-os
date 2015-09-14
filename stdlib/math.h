@@ -1,5 +1,7 @@
 #pragma once
 
+// User/Kernel mode header
+
 #define max(a, b) \
 	({ __typeof__ (a) _a = (a); \
 	   __typeof__ (b) _b = (b); \

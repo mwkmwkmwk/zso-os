@@ -1,6 +1,8 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #define _countof(arr) (sizeof(arr) / sizeof((arr)[0]))
 

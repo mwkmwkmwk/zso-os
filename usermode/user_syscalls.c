@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include "io/interrupts.h"
+#include "stdlib/math.h"
 
 uint8_t user_stack[4096 * 10] = { 0 }; // Primitive, temporary hack
 
@@ -83,4 +84,65 @@ void user_sleep(double sec) {
 			break;
 		user_yield();
 	}
+}
+
+void user_read_line(char* buf, int buf_size) {
+	int i = 0;
+	while (i < buf_size - 1) {
+		struct keyboard_event event;
+		if (!user_sys_get_key(&event)) {
+			user_yield();
+		} else {
+			if (event.ascii) {
+				char tmpbuf[2];
+				tmpbuf[0] = event.ascii;
+				tmpbuf[1] = 0;
+				user_sys_print(tmpbuf);
+				// We prefer ascii over virt. keys (e.g. to not differentiate between two enters)
+				if (event.ascii == '\n')
+					break;
+				if (event.ascii == '\b')
+					i = max(0, i - 1);
+				else
+					buf[i++] = event.ascii;
+			}
+		}
+	}
+	buf[i] = 0;
+}
+
+// Temporary, shameless copy-paste from string.c
+// I don't want to make a syscall from it. Will be solved by
+// compiling user code separately or changing linker script.
+int user_strncmp(const char* str1, const char* str2, size_t max_len) {
+	int i = 0;
+	for (; i < max_len; i++) {
+		if (!*str1 || *str1 != *str2)
+			break;
+		str1++;
+		str2++;
+	}
+	if (i == max_len) {
+		str1--;
+		str2--;
+	}
+	return *str1 == *str2 ? 0 : (*str1 < *str2 ? -1 : 1);
+}
+
+void user_strrev(char* str) {
+	int len = user_strlen(str);
+	int i;
+	char tmp;
+	for (i = 0; i < len/2; i++) {
+		tmp = str[i];
+		str[i] = str[len - i - 1];
+		str[len - i - 1] = tmp;
+	}
+}
+
+size_t user_strlen(const char* str) {
+	size_t len = 0;
+	while (*str++)
+		len++;
+	return len;
 }
