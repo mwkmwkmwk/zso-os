@@ -75,7 +75,7 @@ void self_test(void) {
 	printf("--------------------------------------\n");
 }
 
-_Noreturn void panic(const char *arg) {
+noreturn void panic(const char *arg) {
 	puts(arg);
 	puts("\n");
 	while (1) {

@@ -24,4 +24,4 @@ ushort get_pic_int_mask();
 void enable_pic_interrupt(int interrupt);
 void disable_pic_interrupt(int interrupt);
 void set_pic_interrupt_mask(ushort mask);
-void finish_pic_interrupt(void);
+void finish_pic_interrupt(int interrupt);

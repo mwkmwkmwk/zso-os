@@ -11,7 +11,7 @@
 
 struct list thread_list_head;
 struct thread* current_thread;
-extern void __attribute__((noreturn)) user_thread_entry(int (*)(void*), void* );
+extern void noreturn user_thread_entry(int (*)(void*), void* );
 extern char user_stack[];
 
 static volatile uint next_user_stack = 0;
@@ -76,7 +76,7 @@ void yield(void) {
 	);
 }
 
-void __attribute__((noreturn)) start_scheduling(void) {
+void noreturn start_scheduling(void) {
 	disable_interrupts();
 	add_tick_callback(sched_tick);
 
@@ -92,7 +92,7 @@ void kernel_thread_entry(thread_entry* start_addr, void* arg) {
 	kill_current_thread(exit_code);
 }
 
-void __attribute__((noreturn)) kill_current_thread(int exit_code) {
+void noreturn kill_current_thread(int exit_code) {
 	printf("Thread `%s` exited with exit code %u\n", current_thread->name, exit_code);
 	bool iflag = disable_interrupts();
 	current_thread->state = EXITING;

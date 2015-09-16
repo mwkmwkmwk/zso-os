@@ -46,8 +46,7 @@ load_context:
 	; Check if privileges have changed
 	mov ax, cs
 	xor eax, [ebp + context.cs]
-	and eax, 0b11
-	cmp ax, 0
+	test eax, 0b11
 ; !!!! No arithmetic after this point (until .no_priv_change) !!!!
 	jnz .priv_change
 		mov ax, ss

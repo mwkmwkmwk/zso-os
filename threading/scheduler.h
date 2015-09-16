@@ -28,10 +28,10 @@ extern struct list thread_list_head;
 
 typedef int thread_entry(void*);
 
-void __attribute__((noreturn)) start_scheduling(void);
+void noreturn start_scheduling(void);
 void create_kernel_thread(thread_entry* address, void* arg, const char* name);
 void create_user_thread(thread_entry* address, void* arg, const char* name);
-void __attribute__((noreturn)) kill_current_thread(int exit_code);
+void noreturn kill_current_thread(int exit_code);
 void yield_from_irq(struct context** context_ptr);
 void yield(void);
 void init_scheduler(void);

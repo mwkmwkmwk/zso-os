@@ -31,7 +31,7 @@ static void pit_int_handler(struct context** context_ptr) {
 		((struct callback_t*)it)->callback(context_ptr);
 	}
 
-	finish_pic_interrupt();
+	finish_pic_interrupt(INT_PIT);
 }
 
 void init_timers(void) {

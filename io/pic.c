@@ -54,6 +54,10 @@ void set_pic_interrupt_mask(ushort mask) {
 	outb(PIC2_DATA, (mask >> 8) & 0xFF);
 }
 
-void finish_pic_interrupt(void) {
-	outb(PIC1_CMD, PIC_EOI);
+void finish_pic_interrupt(int interrupt) {
+	assert_pic_int_num(interrupt);
+	if (CPU_TO_PIC(interrupt) < 8)
+		outb(PIC1_CMD, PIC_EOI);
+	else
+		outb(PIC2_CMD, PIC_EOI);
 }

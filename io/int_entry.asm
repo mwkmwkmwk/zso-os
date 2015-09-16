@@ -65,8 +65,7 @@ common_int_entry:
 	push eax
 	mov ax, cs
 	xor eax, [ebp + .saved_cs]
-	and eax, 0b11
-	cmp ax, 0 ; Assuming that we only use ring0 and ring3
+	test eax, 0b11 ; Assuming that we only use ring0 and ring3
 	pop eax
 	jz .no_priv_change
 		push dword [ebp + .saved_esp]

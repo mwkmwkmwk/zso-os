@@ -147,7 +147,7 @@ static void irq1(struct context** context_ptr) {
 	}
 
 RETURN:
-	finish_pic_interrupt();
+	finish_pic_interrupt(INT_KEYBOARD);
 }
 
 void init_keyboard(void) {

@@ -14,7 +14,7 @@ ull syscall(int number, int arg1, int arg2, int arg3, int arg4, int arg5);
 void user_sys_hello();
 void user_sys_test(int arg1, int arg2, int arg3, int arg4, int arg5);
 void user_sys_gettime(double* out_sec);
-void __attribute__((noreturn)) user_sys_exit(int exit_code);
+void noreturn user_sys_exit(int exit_code);
 void user_sys_print(const char* text);
 void user_sys_create_thread(void* start, void* arg, const char* name);
 void user_sys_get_keyboard_focus(void);

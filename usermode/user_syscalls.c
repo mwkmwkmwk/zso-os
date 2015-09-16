@@ -8,7 +8,7 @@
 uint8_t user_stack[4096 * 10] = { 0 }; // Primitive, temporary hack
 
 // Every new user thread starts its execution here
-void __attribute__((noreturn)) user_thread_entry(int (*start_addr)(void*), void* arg) {
+void noreturn user_thread_entry(int (*start_addr)(void*), void* arg) {
 	int exit_code = start_addr(arg);
 	user_sys_exit(exit_code);
 }
@@ -44,7 +44,7 @@ void user_sys_gettime(double* out_sec) {
 	syscall(SYS_GETTIME, (uint)out_sec, 0, 0, 0, 0);
 }
 
-void __attribute__((noreturn)) user_sys_exit(int exit_code) {
+void noreturn user_sys_exit(int exit_code) {
 	syscall(SYS_EXIT, exit_code, 0, 0, 0, 0);
 	while (1) {} // Should never happen
 }
