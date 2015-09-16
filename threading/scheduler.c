@@ -102,7 +102,7 @@ void noreturn kill_current_thread(int exit_code) {
 }
 
 void create_kernel_thread(thread_entry* address, void* arg, const char* name) {
-	struct thread* thread = aligned_kalloc(sizeof(struct thread), 16);
+	struct thread* thread = aligned_kalloc(sizeof(struct thread), _Alignof(struct thread));
 	thread->state = READY;
 	thread->scheduled_on = -1;
 	strncpy(thread->name, name, 32);

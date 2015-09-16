@@ -5,7 +5,7 @@
 // Unfortunately it's redundant with context.inc's
 // We still lack some not-widely used registers, e.g. dr*
 // Must be aligned to 16B
-struct __attribute__((aligned(16))) context {
+struct context {
 	uint eax;
 	uint ebx;
 	uint ecx;

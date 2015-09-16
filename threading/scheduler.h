@@ -14,11 +14,11 @@ enum THREAD_STATE {
 	EXITING,
 };
 
-struct __attribute__((aligned(16))) thread {
+struct thread {
 	struct list list_node;
 	enum THREAD_STATE state;
 	ull scheduled_on;
-	struct context __attribute__((aligned(16))) context; // valid only if state != RUNNING
+	struct context context; // valid only if state != RUNNING
 	char name[32];
 	struct keyboard_buffer keyboard_buffer;
 };

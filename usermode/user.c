@@ -5,7 +5,7 @@ int user_thread(void* arg) {
 	user_sys_get_keyboard_focus();
 	char line[50];
 	user_sys_print("----------------------------\n");
-	user_sys_print("Welcome in biedoshell v1.0\n");
+	user_sys_print("Welcome to biedoshell v1.0\n");
 	user_sys_print("----------------------------\n");
 	while (1) {
 		user_sys_print("> ");
