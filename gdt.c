@@ -1,5 +1,7 @@
 #include <stdint.h>
+#include <stdbool.h>
 #include "gdt.h"
+#include "io.h"
 
 extern char stack_end[1];
 
@@ -39,9 +41,9 @@ struct gdt_entry gdt[] = {
 	// kernel data
 	{ 0xffff, 0, 0, 0x93, 0xcf, 0 },
 	// user code
-	{ 0xffff, 0, 0, 0xfb, 0x40, 0 },
+	{ 0xffff, 0, 0, 0xfb, 0xcf, 0 },
 	// user data
-	{ 0xffff, 0, 0, 0xf3, 0x40, 0 },
+	{ 0xffff, 0, 0, 0xf3, 0xcf, 0 },
 	// TSS
 	{ 0x67, 0, 0, 0x89, 0x40, 0 },
 };
@@ -58,16 +60,20 @@ struct lgdt_arg {
 	(uint32_t)idt
 };
 
-void set_idt_entry(int idx, void *handler) {
+void set_idt_entry(int idx, void *handler, _Bool user) {
 	uint32_t addr = (uint32_t)handler;
 	idt[idx].addr_lo = addr;
 	idt[idx].addr_hi = addr >> 16;
 	idt[idx].seg = 0x8;
-	idt[idx].attr = 0xef;
+	uint8_t attr = 0x8f;
+	if (user)
+		attr |= 0x60;
+	idt[idx].attr = attr;
 }
 
+extern char irq1_asm[1];
 extern char syscall_asm[1];
-extern char user[1];
+extern char pagefault_asm[1];
 
 void init_gdt(void) {
 	asm volatile (
@@ -92,14 +98,9 @@ void init_gdt(void) {
 		"1:\n"
 		:::
 	);
-	set_idt_entry(0x30, syscall_asm);
-	uint32_t user_base = (uint32_t)user;
-	gdt[3].base_lo = user_base;
-	gdt[3].base_mid = user_base >> 16;
-	gdt[3].base_hi = user_base >> 24;
-	gdt[4].base_lo = user_base;
-	gdt[4].base_mid = user_base >> 16;
-	gdt[4].base_hi = user_base >> 24;
+	set_idt_entry(0x0e, pagefault_asm, false);
+	set_idt_entry(0x21, irq1_asm, false);
+	set_idt_entry(0x30, syscall_asm, true);
 	uint32_t tss_base = (uint32_t)&tss;
 	gdt[5].base_lo = tss_base;
 	gdt[5].base_mid = tss_base >> 16;
@@ -109,4 +110,16 @@ void init_gdt(void) {
 		:
 		: "r"((uint16_t)0x28)
 	);
+	outb(0x20, 0x11);
+	outb(0x21, 0x20);
+	outb(0x21, 0x04);
+	outb(0x21, 0x01);
+	outb(0xa0, 0x11);
+	outb(0xa1, 0x28);
+	outb(0xa1, 0x02);
+	outb(0xa1, 0x01);
+
+	outb(0x21, 0xfd);
+	outb(0xa1, 0xff);
+	asm volatile ("sti");
 }

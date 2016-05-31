@@ -1,17 +1,40 @@
 #include <stddef.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include "gdt.h"
 #include "string.h"
-
-static inline void outb(uint16_t port, uint8_t val) {
-	asm volatile ("outb %0, %1" : : "a"(val), "d"(port));
-}
+#include "kernel.h"
+#include "io.h"
 
 void printf(char *format, ...) {
+	int i;
+	uint32_t n;
+	va_list va;
+	va_start(va, format);
 	while (*format) {
 		char c = *format++;
-		outb(0x3f8, c);
+		if (c == '%') {
+			c = *format++;
+			switch (c) {
+				case 'x':
+					n = va_arg(va, uint32_t);
+					outb(0x3f8, '0');
+					outb(0x3f8, 'x');
+					for (i = 7; i >= 0; i--)
+						outb(0x3f8, "0123456789abcdef"[n >> (i * 4) & 0xf]);
+					break;
+			}
+		} else {
+			outb(0x3f8, c);
+		}
 	}
+	va_end(va);
+}
+
+_Noreturn void panic(char *reason) {
+	printf(reason);
+	asm("cli; hlt");
+	__builtin_unreachable();
 }
 
 struct regs {
@@ -35,8 +58,23 @@ void syscall(struct regs *regs) {
 	}
 }
 
+void pagefault(struct regs *regs, uint32_t vaddr) {
+	printf("page fault on %x\n", vaddr);
+	panic("pagefault");
+}
+
+void irq1(void) {
+	uint8_t val = inb(0x60);
+	printf("irq1, %x\n", val);
+	outb(0x20, 0x20);
+}
+
+extern uint8_t user[1];
+
 void main(void) {
 	init_gdt();
+	init_paging();
+	uint32_t entry = load_user(user);
 	static char hello[2*80*25] = {
 		'H', 0x0a,
 		'e', 0x0a,
@@ -52,17 +90,19 @@ void main(void) {
 		'd', 0x0a,
 		'!', 0x0a,
 	};
-	memcpy((void*)0xb8000, hello, sizeof hello);
+	memcpy((void*)0x000b8000, hello, sizeof hello);
 	printf("Hello, world!\n");
-	asm(
-		"movl $0x20, %eax\n"
-		"movl %eax, %ds\n"
-		"movl %eax, %es\n"
+	asm volatile(
+		"movl $0x20, %%eax\n"
+		"movl %%eax, %%ds\n"
+		"movl %%eax, %%es\n"
 		"pushl $0x23\n"
 		"pushl $0x00000000\n"
-		"pushl $0x00000002\n"
+		"pushl $0x00000202\n"
 		"pushl $0x1b\n"
-		"pushl $0x1000\n"
+		"pushl %%ecx\n"
 		"iretl\n"
+		:
+		: "c"(entry)
 	);
 }
