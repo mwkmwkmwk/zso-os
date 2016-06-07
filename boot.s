@@ -13,6 +13,24 @@ cli
 hlt
 
 
+.global irq0_asm
+irq0_asm:
+pushl %ds
+pushl %es
+pushl %edx
+pushl %ecx
+pushl %eax
+movl $0x10, %eax
+movl %eax, %ds
+movl %eax, %es
+call irq0
+popl %eax
+popl %ecx
+popl %edx
+popl %es
+popl %ds
+iretl
+
 .global irq1_asm
 irq1_asm:
 pushl %ds
@@ -101,3 +119,6 @@ stack_end:
 .global user
 user:
 .incbin "user"
+.global user2
+user2:
+.incbin "user2"

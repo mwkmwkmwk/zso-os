@@ -5,12 +5,7 @@
 
 extern char stack_end[1];
 
-struct tss {
-	uint32_t _0;
-	uint32_t esp0;
-	uint32_t ss0;
-	uint32_t _1[0x68/4 - 3];
-} tss = {
+struct tss tss = {
 	.esp0 = (uint32_t)stack_end,
 	.ss0 = 0x10,
 };
@@ -65,12 +60,13 @@ void set_idt_entry(int idx, void *handler, _Bool user) {
 	idt[idx].addr_lo = addr;
 	idt[idx].addr_hi = addr >> 16;
 	idt[idx].seg = 0x8;
-	uint8_t attr = 0x8f;
+	uint8_t attr = 0x8e;
 	if (user)
 		attr |= 0x60;
 	idt[idx].attr = attr;
 }
 
+extern char irq0_asm[1];
 extern char irq1_asm[1];
 extern char syscall_asm[1];
 extern char pagefault_asm[1];
@@ -99,6 +95,7 @@ void init_gdt(void) {
 		:::
 	);
 	set_idt_entry(0x0e, pagefault_asm, false);
+	set_idt_entry(0x20, irq0_asm, false);
 	set_idt_entry(0x21, irq1_asm, false);
 	set_idt_entry(0x30, syscall_asm, true);
 	uint32_t tss_base = (uint32_t)&tss;
@@ -119,7 +116,7 @@ void init_gdt(void) {
 	outb(0xa1, 0x02);
 	outb(0xa1, 0x01);
 
-	outb(0x21, 0xfd);
+	outb(0x21, 0xfc);
 	outb(0xa1, 0xff);
 	asm volatile ("sti");
 }
