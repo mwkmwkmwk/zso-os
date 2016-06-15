@@ -16,6 +16,7 @@ struct process *start_process(void (*fun) (void *), void *param) {
 		pdp[i] = 0;
 	for (i = 0 ; i < 0x100; i++)
 		pdp[i] = i << 22 | 0x183;
+	pdp[0x1ff] = 0xfec00183;
 	uint32_t *top = (void *)(stack + 0x1000);
 	*--top = (uint32_t)param;
 	*--top = 0;

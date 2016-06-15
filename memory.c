@@ -28,6 +28,10 @@ void init_paging(void) {
 		pdp[i] = 0;
 	for (i = 0 ; i < 0x100; i++)
 		pdp[i] = i << 22 | 0x183;
+	// 0x7fc00000 -> 0xfec00000
+	// 0x7fc00000 IO APIC
+	// 0x7fe00000 LAPIC
+	pdp[0x1ff] = 0xfec00183;
 	asm volatile ("movl %0, %%cr3" : : "r"(pd));
 	uint32_t cr4;
 	asm volatile ("movl %%cr4, %0" : "=r"(cr4) :);

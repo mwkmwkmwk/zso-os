@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include "gdt.h"
 #include "io.h"
+#include "kernel.h"
 
 extern char stack_end[1];
 
@@ -71,6 +72,24 @@ extern char irq1_asm[1];
 extern char syscall_asm[1];
 extern char pagefault_asm[1];
 
+void write_ioapic(int idx, uint32_t data) {
+	*(volatile uint32_t *)ioapic = idx;
+	*(volatile uint32_t *)((volatile char *)ioapic + 0x10) = data;
+}
+
+uint32_t read_ioapic(int idx) {
+	*(volatile uint32_t *)ioapic = idx;
+	return *(volatile uint32_t *)((volatile char *)ioapic + 0x10);
+}
+
+void write_lapic(int idx, uint32_t data) {
+	*(volatile uint32_t *)((volatile char *)lapic + idx) = data;
+}
+
+uint32_t read_lapic(int idx) {
+	return *(volatile uint32_t *)((volatile char *)lapic + idx);
+}
+
 void init_gdt(void) {
 	asm volatile (
 		"lgdt %0"
@@ -115,8 +134,17 @@ void init_gdt(void) {
 	outb(0xa1, 0x28);
 	outb(0xa1, 0x02);
 	outb(0xa1, 0x01);
-
-	outb(0x21, 0xfc);
+	outb(0x21, 0xff);
 	outb(0xa1, 0xff);
+	int i;
+	for (i = 0; i < 0xf0; i++) {
+		write_ioapic(0x10 + i * 2, 0x00010000);
+		write_ioapic(0x11 + i * 2, 0x00000000);
+	}
+	write_ioapic(0x12, 0x00000021);
+	write_ioapic(0x13, 0x00000000);
+	write_lapic(0xf0, 0x1ff);
+	write_lapic(0x380, 1000);
+	write_lapic(0x320, 0x20020);
 	asm volatile ("sti");
 }

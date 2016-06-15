@@ -106,7 +106,10 @@ void pagefault(struct regs *regs, uint32_t vaddr) {
 }
 
 void irq0(void) {
-	outb(0x20, 0x20);
+	write_lapic(0xb0, 0);
+	write_lapic(0x320, 0x20020);
+	write_lapic(0x380, 1000);
+	write_lapic(0x390, 0);
 	switch_to_something();
 }
 
@@ -117,7 +120,7 @@ void irq1(void) {
 		buf[wptr++] = val;
 	else
 		printf("oops\n");
-	outb(0x20, 0x20);
+	write_lapic(0xb0, 0);
 }
 
 extern uint8_t user[1];
@@ -157,9 +160,13 @@ void user2_proc_fun(void *init_proc) {
 	);
 }
 
+extern char boot_ap[1];
+extern char boot_ap_end[1];
+
 void main(void) {
-	init_gdt();
 	init_paging();
+	init_gdt();
+
 	static char hello[2*80*25] = {
 		'H', 0x0a,
 		'e', 0x0a,
@@ -176,6 +183,19 @@ void main(void) {
 		'!', 0x0a,
 	};
 	memcpy((void*)0x000b8000, hello, sizeof hello);
+
+	memcpy((void*)0x8000, boot_ap, boot_ap_end-boot_ap);
+	write_lapic(0x310, 0x01000000);
+	write_lapic(0x300, 0x00004500);
+	while (read_lapic(0x300) & 0x1000);
+
+	write_lapic(0x310, 0x01000000);
+	write_lapic(0x300, 0x00000500);
+	while (read_lapic(0x300) & 0x1000);
+
+	write_lapic(0x310, 0x01000000);
+	write_lapic(0x300, 0x00000608);
+	while (read_lapic(0x300) & 0x1000);
 	struct process *user1_proc = start_process(user1_proc_fun, proc_cur);
 	struct process *user2_proc = start_process(user2_proc_fun, proc_cur);
 	uint32_t cnt = 0;

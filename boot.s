@@ -109,10 +109,59 @@ popl %es
 popl %ds
 iretl
 
+.global boot_ap
+boot_ap:
+.code16
+movw $0x900, %ax
+movw %ax, %ds
+movl $gdt, 4
+movw $0x2f, 2
+lgdtl 2
+movl %cr0, %eax
+orl $1, %eax
+movl %eax, %cr0
+movw $0x10, %ax
+movw %ax, %ds
+movw %ax, %es
+movw %ax, %ss
+ljmpl $0x08, $boot_ap_pm
+.global boot_ap_end
+boot_ap_end:
+.code32
+
+boot_ap_pm:
+movl $stack2_end, %esp
+call printf
+pushl $hello_ap_end-hello_ap
+pushl $hello_ap
+pushl $0xb80a0
+call memcpy
+cli
+hlt
+
+.section .rodata
+
+hello_ap:
+.byte 'H', 0x0f
+.byte 'e', 0x0f
+.byte 'l', 0x0f
+.byte 'l', 0x0f
+.byte 'o', 0x0f
+.byte ',', 0x0f
+.byte ' ', 0x0f
+.byte 'A', 0x0f
+.byte 'P', 0x0f
+.byte '!', 0x0f
+hello_ap_end:
+
 .section .bss
 .skip 0x1000
 .global stack_end
 stack_end:
+
+.skip 0x1000
+.global stack2_end
+stack2_end:
 
 .section .data
 .align 0x1000
