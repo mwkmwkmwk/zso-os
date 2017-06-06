@@ -3,6 +3,7 @@
 #include "idt.h"
 #include "io.h"
 #include "apic.h"
+#include "malloc.h"
 #include "msr.h"
 
 uint8_t stack[0x1000];
@@ -25,15 +26,6 @@ asm(
 extern uint16_t ekran[25][80];
 int row = 2;
 int col = 0;
-
-extern char end;
-void *mem = &end;
-
-void *malloc(size_t sz) {
-	void *res = (void*)(((uint64_t)mem + 0xfff) & ~0xfff);
-	mem += sz;
-	return res;
-}
 
 void printf(const char *p) {
 	while (*p) {
@@ -220,19 +212,19 @@ void map_page_user(uint64_t virt, uint64_t phys) {
 	);
 	uint64_t *pt4 = (void *)(PHYS_BASE + p4);
 	if (!(pt4[i4] & 1)) {
-		void *npt = malloc(0x1000);
+		void *npt = alloc_pages(1);
 		pt4[i4] = ((uint64_t)npt - PHYS_BASE) | 7;
 	}
 	p3 = pt4[i4] & ~0xfff;
 	uint64_t *pt3 = (void *)(PHYS_BASE + p3);
 	if (!(pt3[i3] & 1)) {
-		void *npt = malloc(0x1000);
+		void *npt = alloc_pages(1);
 		pt3[i3] = ((uint64_t)npt - PHYS_BASE) | 7;
 	}
 	p2 = pt3[i3] & ~0xfff;
 	uint64_t *pt2 = (void *)(PHYS_BASE + p2);
 	if (!(pt2[i2] & 1)) {
-		void *npt = malloc(0x1000);
+		void *npt = alloc_pages(1);
 		pt2[i2] = ((uint64_t)npt - PHYS_BASE) | 7;
 	}
 	p1 = pt2[i2] & ~0xfff;
@@ -290,7 +282,7 @@ int main() {
 		:
 		"rax"
 	);
-	void *user_page = malloc(0x1000);
+	void *user_page = alloc_pages(1);
 	map_page_user(0x123456789000, (uint64_t)user_page - PHYS_BASE);
 	extern char user_code[];
 	extern char user_code_end[];
