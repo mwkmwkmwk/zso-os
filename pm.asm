@@ -11,8 +11,17 @@ mov dword [0x8e000], 0x8f003
 mov dword [0x8e004], 0
 mov dword [0x8e800], 0x8f003
 mov dword [0x8e804], 0
-mov dword [0x8f000], 0x00000083
-mov dword [0x8f004], 0
+mov ecx, 0x200
+mov ebx, 0
+mov eax, 0x00000083
+mov edx, 0
+.loop:
+mov dword [0x8f000+ebx], eax
+mov dword [0x8f004+ebx], edx
+add eax, 0x40000000
+adc edx, 0
+add ebx, 8
+loop .loop
 mov eax, 0x8e000
 mov cr3, eax
 mov eax, cr4
