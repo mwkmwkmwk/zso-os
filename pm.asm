@@ -25,7 +25,7 @@ loop .loop
 mov eax, 0x8e000
 mov cr3, eax
 mov eax, cr4
-or eax, 0x20
+or eax, 0x220
 mov cr4, eax
 
 mov ecx, 0xc0000080

@@ -8,7 +8,10 @@ pm.bin: pm.asm
 b64.bin: b64.asm
 	nasm -fbin b64.asm -o b64.bin
 
-%.o: %.c
+user.bin: user.asm
+	nasm -fbin user.asm -o user.bin
+
+%.o: %.c user.bin
 	gcc -m64 -ffreestanding -mcmodel=large -O3 -c $< -o $@
 
 OBJS = main.o idt.o
