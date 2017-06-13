@@ -2,7 +2,6 @@
 
 #include "malloc.h"
 
-
 extern char end;
 static void *malloc_pool = &end;
 
@@ -30,10 +29,12 @@ static void *find_free(size_t sz) {
     return NULL;
 }
 
-void *malloc(size_t sz) {
+static void *_malloc(size_t sz, int use_freed) {
     void *ptr = NULL;
     sz = (sz + MALLOC_ALIGN_BITS) & ~MALLOC_ALIGN_BITS;
-    ptr = find_free(sz);
+    if (use_freed) {
+        ptr = find_free(sz);
+    }
     if (ptr == NULL) {
         // if end is aligned then this can be removed
         malloc_pool = (void *)(((uint64_t)malloc_pool + MALLOC_ALIGN_BITS) & ~MALLOC_ALIGN_BITS);
@@ -43,6 +44,10 @@ void *malloc(size_t sz) {
         MALLOC_GET_SIZE(ptr) = sz;
     }
     return ptr;
+}
+
+void *malloc(size_t sz) {
+    return _malloc(sz, 1);
 }
 
 void free(void *ptr) {
@@ -70,21 +75,17 @@ void free(void *ptr) {
 
 // uhm, I should be killed for writting this
 void *alloc_pages(size_t count) {
-    uint64_t res = (uint64_t)malloc ((count << 12) + 0xfff);
-    return (void *)((res + 0xfff) & ~0xfff);
-#if 0
     void *ptr = NULL,
          *ret = NULL;
     uint64_t size_to_page_end = (((uint64_t)malloc_pool + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1)) - (uint64_t)malloc_pool;
-
+    
     if (size_to_page_end != MALLOC_HEADER_SIZE) {
         if (size_to_page_end == 0) {
             size_to_page_end = PAGE_SIZE;
         }
-        ptr = malloc(size_to_page_end - 2 * MALLOC_HEADER_SIZE);
+        ptr = _malloc(size_to_page_end - 2 * MALLOC_HEADER_SIZE, 0);
     }
     ret = malloc(PAGE_SIZE * count);
     free(ptr);
     return ret;
-#endif
 }
