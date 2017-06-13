@@ -8,6 +8,15 @@
 #include "stdio.h"
 #include "utils.h"
 
+struct thread {
+	struct thread *next;
+	struct thread *prev;
+	uint64_t rsp;
+	uint64_t rsp_tss;
+};
+
+struct thread *cur_thread;
+
 uint8_t stack[0x1000];
 
 asm(
@@ -23,6 +32,9 @@ asm(
 	"user_code:\n"
 	".incbin \"user.bin\"\n"
 	"user_code_end:\n"
+	"user2_code:\n"
+	".incbin \"user2.bin\"\n"
+	"user2_code_end:\n"
 );
 
 void div0() {
@@ -69,13 +81,20 @@ asm(
 	"iretq\n"
 );
 
+uint64_t stash[2];
+
 asm(
 	".global syscall_syscall_asm\n"
 	"syscall_syscall_asm:\n"
-	"movabsq %rax, stack+0xff0\n"
+	"movabsq %rax, stash\n"
 	"movq %rsp, %rax\n"
-	"movabsq %rax, stack+0xff8\n"
-	"movabsq $stack+0xff0, %rsp\n"
+	"movabsq %rax, stash+8\n"
+	"movabsq tss+4, %rax\n"
+	"movq %rax, %rsp\n"
+	"movabsq stash+8, %rax\n"
+	"pushq %rax\n"
+	"movabsq stash, %rax\n"
+	"pushq %rax\n"
 	"pushq %rcx\n"
 	"pushq %rdx\n"
 	"pushq %rbx\n"
@@ -136,6 +155,31 @@ asm(
 	"iretq\n"
 );
 
+asm(
+	".global resched_asm\n"
+	"resched_asm:\n"
+	"pushq %rax\n"
+	"pushq %rcx\n"
+	"pushq %rdx\n"
+	"pushq %rsi\n"
+	"pushq %rdi\n"
+	"pushq %r8\n"
+	"pushq %r9\n"
+	"pushq %r10\n"
+	"pushq %r11\n"
+	"call resched\n"
+	"popq %r11\n"
+	"popq %r10\n"
+	"popq %r9\n"
+	"popq %r8\n"
+	"popq %rdi\n"
+	"popq %rsi\n"
+	"popq %rdx\n"
+	"popq %rcx\n"
+	"popq %rax\n"
+	"iretq\n"
+);
+
 struct regs {
 	uint64_t r15;
 	uint64_t r14;
@@ -167,6 +211,64 @@ void syscall(struct regs *regs) {
 	}
 }
 
+asm(
+	"switch_asm:"
+	"pushq %rbx\n"
+	"pushq %rbp\n"
+	"pushq %r12\n"
+	"pushq %r13\n"
+	"pushq %r14\n"
+	"pushq %r15\n"
+	"movq %rsp, (%rdi)\n"
+	"movq (%rsi), %rsp\n"
+	"popq %r15\n"
+	"popq %r14\n"
+	"popq %r13\n"
+	"popq %r12\n"
+	"popq %rbp\n"
+	"popq %rbx\n"
+	"retq\n"
+);
+
+asm(
+	"new_thread_asm:\n"
+	"movq %rbx, %rdi\n"
+	"jmpq *%rbp\n"
+);
+
+void new_thread(void (*fun)(void *), void *arg) {
+	extern char new_thread_asm[];
+	char *stack = malloc(0x1000);
+	stack += 0x1000;
+	struct thread *new = malloc(sizeof *new);
+	new->prev = cur_thread;
+	new->next = cur_thread->next;
+	cur_thread->next = new;
+	new->next->prev = new;
+	new->rsp_tss = (uint64_t)stack;
+	stack -= 7 * 8;
+	uint64_t *init = (void *)stack;
+	init[4] = (uint64_t)fun;
+	init[5] = (uint64_t)arg;
+	init[6] = (uint64_t)new_thread_asm;
+	new->rsp = (uint64_t)stack;
+}
+
+void resched() {
+	struct thread *new = cur_thread->next;
+	struct thread *old = cur_thread;
+	cur_thread = new;
+	set_tss_rsp(cur_thread->rsp_tss);
+	extern void switch_asm(uint64_t *pold_rsp, uint64_t *new_rsp);
+	switch_asm(&old->rsp, &new->rsp);
+};
+
+extern void enter_userspace(uint64_t);
+
+void test_thread(void *arg) {
+	enter_userspace(0x23456789a000);
+}
+
 void irq1() {
 	printf("IRQ1\n");
 	unsigned char c = inb(0x60);
@@ -175,6 +277,8 @@ void irq1() {
 	buf[7] = "0123456789abcdef"[c >> 4];
 	printf(buf);
 	write_lapic(0xb0, 0);
+	if (!(c & 0x80))
+		resched();
 }
 
 
@@ -267,18 +371,28 @@ int main() {
 		"rax"
 	);
 	void *user_page = alloc_pages(1);
+	void *user2_page = alloc_pages(1);
 	map_page_user(0x123456789000, (uint64_t)user_page - PHYS_BASE);
+	map_page_user(0x23456789a000, (uint64_t)user2_page - PHYS_BASE);
 	extern char user_code[];
 	extern char user_code_end[];
+	extern char user2_code[];
+	extern char user2_code_end[];
 	extern char syscall_syscall_asm[];
 	memcpy(user_page, user_code, user_code_end - user_code);
-	extern void enter_userspace(uint64_t);
+	memcpy(user2_page, user2_code, user2_code_end - user2_code);
 	wrmsr(0xc0000080, rdmsr(0xc0000080) | 1);
 	wrmsr(0xc0000081, 0x002b001800000000);
 	wrmsr(0xc0000082, (uint64_t)&syscall_syscall_asm);
 	wrmsr(0xc0000083, (uint64_t)&syscall_syscall_asm);
 	wrmsr(0xc0000084, 0xffffffff);
-	set_tss_rsp((uint64_t)stack + sizeof stack);
+	cur_thread = malloc(sizeof *cur_thread);
+	cur_thread->rsp_tss = (uint64_t)stack + sizeof stack;
+	set_tss_rsp(cur_thread->rsp_tss);
+	cur_thread->next = cur_thread;
+	cur_thread->prev = cur_thread;
+
+	new_thread(test_thread, 0);
 	enter_userspace(0x123456789000);
 
 	asm("sti");

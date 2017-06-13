@@ -70,6 +70,9 @@ void free(void *ptr) {
 
 // uhm, I should be killed for writting this
 void *alloc_pages(size_t count) {
+    uint64_t res = (uint64_t)malloc ((count << 12) + 0xfff);
+    return (void *)((res + 0xfff) & ~0xfff);
+#if 0
     void *ptr = NULL,
          *ret = NULL;
     uint64_t size_to_page_end = (((uint64_t)malloc_pool + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1)) - (uint64_t)malloc_pool;
@@ -83,4 +86,5 @@ void *alloc_pages(size_t count) {
     ret = malloc(PAGE_SIZE * count);
     free(ptr);
     return ret;
+#endif
 }

@@ -10,9 +10,11 @@ b64.bin: b64.asm
 
 user.bin: user.asm
 	nasm -fbin user.asm -o user.bin
+user2.bin: user2.asm
+	nasm -fbin user2.asm -o user2.bin
 
-%.o: %.c user.bin
-	gcc -m64 -ffreestanding -mcmodel=large -O3 -c $< -o $@
+%.o: %.c user.bin user2.bin
+	gcc -m64 -ffreestanding -mcmodel=large -O0 -c $< -o $@
 
 OBJS = main.o idt.o malloc.o utils.o stdio.o
 

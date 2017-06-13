@@ -1,4 +1,4 @@
-org 0x123456789000
+org 0x23456789a000
 bits 64
 
 restart:
@@ -21,4 +21,4 @@ loop sleep_loop
 jmp restart
 
 hello:
-db "Hello, user world!", 0xa, 0
+db "Hello, user2 world!", 0xa, 0
