@@ -5,6 +5,8 @@
 #include "apic.h"
 #include "malloc.h"
 #include "msr.h"
+#include "stdio.h"
+#include "utils.h"
 
 uint8_t stack[0x1000];
 
@@ -22,20 +24,6 @@ asm(
 	".incbin \"user.bin\"\n"
 	"user_code_end:\n"
 );
-
-extern uint16_t ekran[25][80];
-int row = 2;
-int col = 0;
-
-void printf(const char *p) {
-	while (*p) {
-		char c = *p++;
-		if (c == '\n')
-			row++, col = 0;
-		else
-			ekran[row][col++] = c | 0x0e00;
-	}
-}
 
 void div0() {
 	printf("Division by 0!\n");
@@ -189,10 +177,6 @@ void irq1() {
 	write_lapic(0xb0, 0);
 }
 
-int getc() {
-	while (!(inb(0x64) & 1));
-	return inb(0x60);
-}
 
 #define PHYS_BASE 0xffff800000000000ull
 
