@@ -5,6 +5,7 @@
 #include "apic.h"
 #include "malloc.h"
 #include "msr.h"
+#include "string.h"
 
 uint8_t stack[0x1000];
 
@@ -24,18 +25,6 @@ asm(
 );
 
 extern uint16_t ekran[25][80];
-int row = 2;
-int col = 0;
-
-void printf(const char *p) {
-	while (*p) {
-		char c = *p++;
-		if (c == '\n')
-			row++, col = 0;
-		else
-			ekran[row][col++] = c | 0x0e00;
-	}
-}
 
 void div0() {
 	printf("Division by 0!\n");
@@ -254,7 +243,8 @@ int main() {
 	init_gdt();
 	init_idt();
 	set_idt_entry(0, (uint64_t)&div0, true);
-	printf("Hello, 64-bit world!\n");
+	printf("Hello, %d-bit world!\n", 64);
+        printf("idt ptr: %p\n", &div0);
 	outb(0x20, 0x11);
 	outb(0x21, 0x20);
 	outb(0x21, 0x04);
