@@ -16,7 +16,7 @@ user2.bin: user2.asm
 %.o: %.c user.bin user2.bin
 	gcc -m64 -ffreestanding -mcmodel=large -O0 -c $< -o $@
 
-OBJS = main.o idt.o malloc.o utils.o stdio.o
+OBJS = main.o idt.o malloc.o utils.o stdio.o serial.o
 
 main.elf: $(OBJS) main.lds
 	ld -o main.elf $(OBJS) -T main.lds -z max-page-size=4096

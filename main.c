@@ -7,6 +7,7 @@
 #include "msr.h"
 #include "stdio.h"
 #include "utils.h"
+#include "serial.h"
 
 struct thread {
 	struct thread *next;
@@ -339,6 +340,9 @@ asm(
 );
 
 int main() {
+        serial_send('o');
+        serial_send('k');
+        serial_send('\n');
 	init_gdt();
 	init_idt();
 	set_idt_entry(0, (uint64_t)&div0, true);
