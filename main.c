@@ -347,6 +347,7 @@ int main() {
 	init_idt();
 	set_idt_entry(0, (uint64_t)&div0, true);
 	printf("Hello, 64-bit world!\n");
+        fprintf(serout, "Hello, serial printf!\n");
 	outb(0x20, 0x11);
 	outb(0x21, 0x20);
 	outb(0x21, 0x04);

@@ -14,7 +14,11 @@ static void __new_line() {
     col = 0;
 }
 
-void putc(char c) {
+void fputc(struct FILE *f, char c) {
+    f->putc(c);
+}
+
+static void vga_putc(char c) {
     if (c == '\n') {
         __new_line();
         return;
@@ -25,27 +29,41 @@ void putc(char c) {
     }
 }
 
-size_t puts(const char *p) {
+static struct FILE stdout_s = { .putc = vga_putc };
+struct FILE *stdout = &stdout_s;
+
+size_t fputs(struct FILE *f, const char *p) {
     char c = 0;
     size_t len = 0;
     while (c = *p++) {
-        putc(c);
+        f->putc(c);
         ++len;
     }
     return len;
 }
 
-static void print_padding(char pad, size_t pad_len, size_t len) {
+static void print_padding(struct FILE *f, char pad, size_t pad_len, size_t len) {
     size_t i = 0;
     if (len < pad_len) {
         for (i = 0; i < pad_len - len; ++i) {
-            putc(pad);
+            f->putc(pad);
         }
     }
 }
 
 void printf(const char *fmt, ...) {
     va_list vl;
+    va_start(vl, fmt);
+    vfprintf(stdout, fmt, vl);
+}
+
+void fprintf(struct FILE *f, const char *fmt, ...) {
+    va_list vl;
+    va_start(vl, fmt);
+    vfprintf(f, fmt, vl);
+}
+
+void vfprintf(struct FILE *f, const char *fmt, va_list vl) {
     char c = 0,
          pad = ' ';
     const char *pad_size_st = NULL;
@@ -58,7 +76,6 @@ void printf(const char *fmt, ...) {
     uint64_t x = 0;
     int size_mod = 0;
 
-    va_start(vl, fmt);
     while (c = *fmt++) {
         if (c == '%') {
             pad_size_st = fmt;
@@ -127,45 +144,45 @@ void printf(const char *fmt, ...) {
                             print_len = int_to_str_hex(x, &str);
                             break;
                     }
-                    print_padding(pad, pad_len, print_len);
-                    puts(str);
+                    print_padding(f, pad, pad_len, print_len);
+                    fputs(f, str);
                     free(str);
                     break;
                 case 's':
                     str = va_arg(vl, char *);
                     print_len = str_len(str);
-                    print_padding(pad, pad_len, print_len);
-                    puts(str);
+                    print_padding(f, pad, pad_len, print_len);
+                    fputs(f, str);
                     break;
                 default:
                     // TODO FIXME XXX KURWA start_ptr
-                    putc('%');
+                    f->putc('%');
                     if (pad == '0') {
-                        putc('0');
+                        f->putc('0');
                     }
                     for (i = 0; i < pad_len; ++i) {
-                        putc(pad_size_st[i]);
+                        f->putc(pad_size_st[i]);
                     }
                     switch (size_mod) {
                         case -2:
-                            putc('h');
-                            putc('h');
+                            f->putc('h');
+                            f->putc('h');
                             break;
                         case -1:
-                            putc('h');
+                            f->putc('h');
                             break;
                         case 1:
-                            putc('l');
+                            f->putc('l');
                             break;
                         default:
                             break;
                     }
-                    putc(c);
+                    f->putc(c);
                     break;
             }
             pad = ' ';
         } else {
-            putc(c);
+            f->putc(c);
         }
     }
     va_end(vl);

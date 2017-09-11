@@ -1,5 +1,6 @@
 #include "serial.h"
 #include "io.h"
+#include "stdio.h"
 
 void init_serial() {
     outb(COM1 + 1, 0x00);
@@ -20,3 +21,6 @@ void serial_send(char a) {
     while(inb(COM1 + 5) & 0x20 == 0) ;
     outb(COM1, a);
 }
+
+struct FILE serout_s = {.putc = serial_send};
+struct FILE *serout = &serout_s;

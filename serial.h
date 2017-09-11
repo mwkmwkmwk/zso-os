@@ -2,3 +2,5 @@
 
 void init_serial();
 void serial_send(char a);
+
+struct FILE *serout;
