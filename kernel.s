@@ -20,4 +20,5 @@ hlt
 .section .bss
 
 .skip 0x1000
+.global stack
 stack:

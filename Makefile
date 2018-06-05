@@ -1,6 +1,6 @@
 all: kernel loader
 
-OBJS := main.o
+OBJS := main.o gdt.o page.o
 
 kernel: kernel.lds kernel.o $(OBJS)
 	ld -Tkernel.lds kernel.o -o kernel $(OBJS)
@@ -15,4 +15,4 @@ loader.o: loader.s kernel
 	gcc -m32 loader.s -c -o loader.o
 
 %.o: %.c
-	clang $< -o $@ -c -ffreestanding -O3 -Wall
+	clang $< -o $@ -c -ffreestanding -O3 -Wall --target=x86_64-unknown -mcmodel=large -mno-mmx -mno-sse
