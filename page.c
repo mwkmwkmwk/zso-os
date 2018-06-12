@@ -20,16 +20,28 @@ void map_page(uint64_t virt, uint64_t phys, int flags) {
 	int idx2 = virt >> 21 & 0x1ff;
 	int idx3 = virt >> 30 & 0x1ff;
 	int idx4 = virt >> 39 & 0x1ff;
-	if (!v_ptl4[idx4])
+	if (!v_ptl4[idx4]) {
 		v_ptl4[idx4] = phys_alloc() | 7;
+		uint64_t p_ptl3 = v_ptl4[idx4] & ~0xfffull;
+		uint64_t *v_ptl3 = P2V(p_ptl3);
+		memset(v_ptl3, 0, 0x1000);
+	}
 	uint64_t p_ptl3 = v_ptl4[idx4] & ~0xfffull;
 	uint64_t *v_ptl3 = P2V(p_ptl3);
-	if (!v_ptl3[idx3])
+	if (!v_ptl3[idx3]) {
 		v_ptl3[idx3] = phys_alloc() | 7;
+		uint64_t p_ptl2 = v_ptl3[idx3] & ~0xfffull;
+		uint64_t *v_ptl2 = P2V(p_ptl2);
+		memset(v_ptl2, 0, 0x1000);
+	}
 	uint64_t p_ptl2 = v_ptl3[idx3] & ~0xfffull;
 	uint64_t *v_ptl2 = P2V(p_ptl2);
-	if (!v_ptl2[idx2])
+	if (!v_ptl2[idx2]) {
 		v_ptl2[idx2] = phys_alloc() | 7;
+		uint64_t p_ptl1 = v_ptl2[idx2] & ~0xfffull;
+		uint64_t *v_ptl1 = P2V(p_ptl1);
+		memset(v_ptl1, 0, 0x1000);
+	}
 	uint64_t p_ptl1 = v_ptl2[idx2] & ~0xfffull;
 	uint64_t *v_ptl1 = P2V(p_ptl1);
 	v_ptl1[idx1] = phys | flags;
