@@ -1,6 +1,6 @@
 all: kernel loader
 
-OBJS := main.o gdt.o page.o
+OBJS := main.o gdt.o page.o stdio.o
 
 kernel: kernel.lds kernel.o $(OBJS)
 	ld -Tkernel.lds kernel.o -o kernel $(OBJS)

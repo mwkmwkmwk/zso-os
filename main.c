@@ -5,6 +5,8 @@
 #include "msr.h"
 #include "page.h"
 #include "io.h"
+#include "stdio.h"
+
 char hello[] = "Hello, C world!";
 
 void *memset(void *s, int c, size_t n) {
@@ -81,15 +83,7 @@ void sys_print(unsigned x, unsigned y, uint16_t *chars, unsigned n) {
 }
 
 void sys_setcursor(unsigned x, unsigned y) {
-	if (x >= 80)
-		return;
-	if (y >= 25)
-		return;
-	unsigned addr = x + y * 80;
-	outb(0x3d4, 0xe);
-	outb(0x3d5, addr >> 8);
-	outb(0x3d4, 0xf);
-	outb(0x3d5, addr);
+	setcursor(x, y);
 }
 
 int kbd_getbyte(void) {
@@ -167,6 +161,11 @@ __asm__(
 extern void user_prog;
 
 void main() {
+	clrscr();
+	for (int i = 97; i < 127; i++) {
+		printf("printf demo: char=%c, dec=%d, hex=%x, str comment = %s\n", i, i, i, "\"no comment\"");
+	}
+
 	init_gdt();
 	init_pg();
 	// ELF loader start
