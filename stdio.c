@@ -6,7 +6,7 @@
 
 #define VGA_WRITE_START 0xffff8000000b8000ull
 #define DEFAULT_FORCOLOR 0x0d
-#define DEFAULT_BACKCOLOR 0x0f
+#define DEFAULT_BACKCOLOR 0x07
 #define WIDTH 80
 #define HEIGHT 25
 
@@ -58,6 +58,7 @@ void clrscr(void) {
         }
     }
     setcursor(0, 0);
+    cur_x = cur_y = 0;
 }
 
 void putc(uint8_t c) {
@@ -92,7 +93,7 @@ static void print_str(uint8_t* str) {
 static void print_num(uint32_t num, uint8_t base) {
     uint32_t tmp;
     uint8_t i = 0;
-    uint8_t digits[8] = { 0 };
+    uint8_t digits[10] = { 0 };
 
     if (!num) {
         putc('0');
@@ -111,7 +112,7 @@ static void print_num(uint32_t num, uint8_t base) {
     }
 }
 
-void printf(uint8_t* format, ...) {
+void printf(const char* format, ...) {
     va_list va;
     va_start(va, format);
     uint8_t c, b;
